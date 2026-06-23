@@ -1,26 +1,42 @@
 <template>
-    <div class="publish-container">
+    <div class="publish-page">
         <!-- 顶部操作栏 -->
         <div class="top-bar">
-            <div class="top-bar-left">
-                <button class="back-btn" @click="router.back()">
-                    <el-icon>
-                        <ArrowLeft />
-                    </el-icon>
-                    返回
-                </button>
-                <span class="top-bar-title">{{ isEdit ? '编辑文章' : '写文章' }}</span>
-            </div>
-            <div class="top-bar-right">
-                <span class="auto-save-hint" v-if="autoSaved">
-                    ✓ 已自动保存
-                </span>
-                <el-button class="draft-top-btn" @click="saveDraft" :loading="submitLoading">
-                    存草稿
-                </el-button>
-                <el-button class="publish-top-btn" :loading="submitLoading" @click="handleSubmit">
-                    {{ isEdit ? '更新文章' : '发布文章' }}
-                </el-button>
+            <div class="top-bar-inner">
+                <div class="top-bar-left">
+                    <button class="back-btn" @click="router.back()">
+                        <el-icon>
+                            <ArrowLeft />
+                        </el-icon>
+                        <span class="back-text">返回</span>
+                    </button>
+                    <div class="top-bar-divider"></div>
+                    <span class="top-bar-title">{{ isEdit ? '编辑文章' : '写文章' }}</span>
+                </div>
+                <div class="top-bar-right">
+                    <transition name="fade-hint">
+                        <span class="auto-save-hint" v-if="autoSaved">
+                            <el-icon :size="14">
+                                <CircleCheck />
+                            </el-icon> 已自动保存
+                        </span>
+                    </transition>
+                    <button class="btn-draft" @click="saveDraft" :disabled="submitLoading">
+                        <el-icon>
+                            <DocumentCopy />
+                        </el-icon>
+                        存草稿
+                    </button>
+                    <button class="btn-publish" :disabled="submitLoading" @click="handleSubmit">
+                        <el-icon v-if="!submitLoading">
+                            <Promotion />
+                        </el-icon>
+                        <el-icon v-else class="is-loading">
+                            <Loading />
+                        </el-icon>
+                        {{ isEdit ? '更新文章' : '发布文章' }}
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -46,26 +62,31 @@
                             <span class="form-label">封面图</span>
                             <span class="form-label-hint">（选填，推荐 16:9 比例）</span>
                         </template>
-                        <el-upload class="cover-uploader" action="http://localhost:3001/api/article/upload"
-                            :headers="uploadHeaders" name="image" :show-file-list="false"
-                            :before-upload="beforeCoverUpload" :on-success="handleCoverSuccess">
+                        <el-upload class="cover-uploader" :action="uploadUrl" :headers="uploadHeaders" name="image"
+                            :show-file-list="false" :before-upload="beforeCoverUpload" :on-success="handleCoverSuccess">
                             <div class="cover-upload-area" v-if="!articleForm.cover">
-                                <el-icon size="28">
-                                    <Plus />
+                                <el-icon :size="28">
+                                    <Picture />
                                 </el-icon>
                                 <span>点击上传封面图</span>
+                                <span class="upload-hint">JPG / PNG / WEBP，不超过 5MB</span>
                             </div>
                             <div class="cover-preview-area" v-else>
                                 <img :src="articleForm.cover" class="cover-preview" />
                                 <div class="cover-actions">
-                                    <span class="cover-action-text">点击更换</span>
+                                    <span class="cover-action-text">
+                                        <el-icon>
+                                            <RefreshRight />
+                                        </el-icon> 点击更换
+                                    </span>
                                 </div>
                             </div>
                         </el-upload>
-                        <el-button v-if="articleForm.cover" type="danger" size="small" link
-                            @click="articleForm.cover = ''" class="remove-cover-btn">
-                            移除封面
-                        </el-button>
+                        <button v-if="articleForm.cover" class="remove-cover-btn" @click="articleForm.cover = ''">
+                            <el-icon>
+                                <Delete />
+                            </el-icon> 移除封面
+                        </button>
                     </el-form-item>
 
                     <!-- 富文本编辑器 -->
@@ -77,7 +98,12 @@
                                 mode="default" @onCreated="handleEditorCreated" @onChange="handleEditorChange" />
                         </div>
                         <div class="editor-footer">
-                            <span class="word-count">字数：{{ wordCount }}</span>
+                            <span class="word-count">
+                                <el-icon :size="12">
+                                    <EditPen />
+                                </el-icon>
+                                {{ wordCount }} 字
+                            </span>
                         </div>
                     </el-form-item>
                 </el-form>
@@ -88,8 +114,10 @@
                 <!-- 发布设置 -->
                 <div class="setting-card">
                     <div class="setting-header">
-                        <span class="setting-icon">⚙️</span>
-                        发布设置
+                        <el-icon :size="16" color="#667eea">
+                            <Setting />
+                        </el-icon>
+                        <span>发布设置</span>
                     </div>
                     <div class="setting-body">
                         <div class="setting-row">
@@ -105,8 +133,10 @@
                 <!-- 分类选择 -->
                 <div class="setting-card">
                     <div class="setting-header">
-                        <span class="setting-icon">📂</span>
-                        文章分类
+                        <el-icon :size="16" color="#F59E0B">
+                            <FolderOpened />
+                        </el-icon>
+                        <span>文章分类</span>
                     </div>
                     <div class="setting-body">
                         <el-select v-model="articleForm.category_id" placeholder="选择分类" style="width: 100%;" clearable>
@@ -118,8 +148,10 @@
                 <!-- 标签选择 -->
                 <div class="setting-card">
                     <div class="setting-header">
-                        <span class="setting-icon">🏷️</span>
-                        文章标签
+                        <el-icon :size="16" color="#A78BFA">
+                            <PriceTag />
+                        </el-icon>
+                        <span>文章标签</span>
                     </div>
                     <div class="setting-body">
                         <el-select v-model="articleForm.tag_ids" multiple placeholder="选择标签（可多选）" style="width: 100%;"
@@ -132,12 +164,14 @@
                 <!-- 文章信息 -->
                 <div class="setting-card" v-if="isEdit">
                     <div class="setting-header">
-                        <span class="setting-icon">📊</span>
-                        文章信息
+                        <el-icon :size="16" color="#4ECDC4">
+                            <DataLine />
+                        </el-icon>
+                        <span>文章信息</span>
                     </div>
                     <div class="setting-body">
                         <div class="info-row">
-                            <span class="info-label">文章ID</span>
+                            <span class="info-label">文章 ID</span>
                             <span class="info-value">#{{ route.params.id }}</span>
                         </div>
                     </div>
@@ -156,6 +190,11 @@ import { ElMessage } from 'element-plus';
 import request from '../../api/request';
 import { createArticle, updateArticle, getArticleById } from '../../api/article';
 import { useUserStore } from '../../stores/user';
+import {
+    ArrowLeft, CircleCheck, DocumentCopy, Promotion, Loading,
+    Picture, RefreshRight, Delete, EditPen, Setting,
+    FolderOpened, PriceTag, DataLine
+} from '@element-plus/icons-vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -167,10 +206,11 @@ const wordCount = ref(0);
 
 const isEdit = computed(() => !!route.params.id);
 
-// 编辑器实例
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001';
+const uploadUrl = `${API_BASE}/api/article/upload`;
+
 const editorRef = shallowRef(null);
 
-// 表单数据
 const articleForm = reactive({
     title: '',
     description: '',
@@ -193,23 +233,19 @@ const uploadHeaders = {
     Authorization: localStorage.getItem('client_token') || ''
 };
 
-// 工具栏配置
 const toolbarConfig = {
     excludeKeys: ['fullScreen', 'group-video', 'insertTable', 'codeBlock']
 };
 
-// 编辑器配置
 const editorConfig = {
     placeholder: '请输入文章内容...',
     autoFocus: false,
     scroll: false,
     MENU_CONF: {
         uploadImage: {
-            server: 'http://localhost:3001/api/article/upload',
+            server: uploadUrl,
             fieldName: 'image',
-            headers: {
-                Authorization: localStorage.getItem('client_token') || ''
-            },
+            headers: uploadHeaders,
             maxFileSize: 5 * 1024 * 1024,
             allowedFileTypes: ['image/*'],
             customInsert(res, insertFn) {
@@ -221,17 +257,14 @@ const editorConfig = {
     }
 };
 
-const handleEditorCreated = (editor) => {
-    editorRef.value = editor;
-};
+const handleEditorCreated = (editor) => { editorRef.value = editor; };
 
-// 编辑器内容变化时更新字数
 const handleEditorChange = (editor) => {
     const text = editor.getText().trim();
     wordCount.value = text.length;
 };
 
-// 自动保存草稿
+// 自动保存
 let autoSaveTimer = null;
 const startAutoSave = () => {
     autoSaveTimer = setInterval(() => {
@@ -250,7 +283,6 @@ const startAutoSave = () => {
     }, 30000);
 };
 
-// 恢复草稿
 const restoreDraft = () => {
     const draft = localStorage.getItem('draft_article');
     if (draft && !isEdit.value) {
@@ -262,19 +294,15 @@ const restoreDraft = () => {
             articleForm.cover = data.cover || '';
             articleForm.category_id = data.category_id || null;
             articleForm.tag_ids = data.tag_ids || [];
-        } catch (e) {
-            // ignore
-        }
+        } catch (e) { }
     }
 };
 
-// 手动存草稿
 const saveDraft = () => {
     articleForm.status = 0;
     handleSubmit();
 };
 
-// 封面上传
 const beforeCoverUpload = (file) => {
     const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowed.includes(file.type)) {
@@ -297,7 +325,6 @@ const handleCoverSuccess = (response) => {
     }
 };
 
-// 获取分类和标签
 const fetchOptions = async () => {
     try {
         const [catRes, tagRes] = await Promise.all([
@@ -311,7 +338,6 @@ const fetchOptions = async () => {
     }
 };
 
-// 编辑模式加载文章
 const fetchArticle = async () => {
     if (!route.params.id) return;
     try {
@@ -331,16 +357,13 @@ const fetchArticle = async () => {
     }
 };
 
-// 提交
 const handleSubmit = () => {
     formRef.value.validate(async (valid) => {
         if (!valid) return;
-
         if (!articleForm.content || articleForm.content === '<p><br></p>') {
             ElMessage.warning('请输入文章内容');
             return;
         }
-
         submitLoading.value = true;
         try {
             if (isEdit.value) {
@@ -349,7 +372,6 @@ const handleSubmit = () => {
             } else {
                 await createArticle(articleForm);
                 ElMessage.success(articleForm.status === 1 ? '文章发布成功！' : '草稿保存成功！');
-                // 发布成功后清除本地草稿
                 localStorage.removeItem('draft_article');
             }
             router.push('/articles');
@@ -381,34 +403,50 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.publish-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px 80px;
+.publish-page {
     background: #f5f6f8;
-    min-height: calc(100vh - 64px);
+    min-height: 100vh;
 }
 
 /* ==================== 顶部操作栏 ==================== */
 .top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.03);
+}
+
+.top-bar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 0;
-    margin-bottom: 20px;
+    gap: 12px;
+}
+
+@media (min-width: 768px) {
+    .top-bar-inner {
+        padding: 12px 24px;
+    }
 }
 
 .top-bar-left {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
 }
 
 .back-btn {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 8px 14px;
+    padding: 7px 14px;
     background: #fff;
     border: 1px solid #e8e8e8;
     border-radius: 8px;
@@ -419,89 +457,182 @@ onBeforeUnmount(() => {
 }
 
 .back-btn:hover {
-    border-color: #1a1a2e;
-    color: #1a1a2e;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.back-text {
+    display: none;
+}
+
+@media (min-width: 640px) {
+    .back-text {
+        display: inline;
+    }
+}
+
+.top-bar-divider {
+    width: 1px;
+    height: 20px;
+    background: #e8e8e8;
+    display: none;
+}
+
+@media (min-width: 640px) {
+    .top-bar-divider {
+        display: block;
+    }
 }
 
 .top-bar-title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     color: #1a1a2e;
+}
+
+@media (min-width: 768px) {
+    .top-bar-title {
+        font-size: 16px;
+    }
 }
 
 .top-bar-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+}
+
+@media (min-width: 768px) {
+    .top-bar-right {
+        gap: 10px;
+    }
 }
 
 .auto-save-hint {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: 12px;
     color: #67C23A;
-    animation: fadeIn 0.3s ease;
+    white-space: nowrap;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
+.fade-hint-enter-active {
+    transition: opacity 0.3s;
+}
 
-    to {
-        opacity: 1;
+.fade-hint-leave-active {
+    transition: opacity 0.3s;
+}
+
+.fade-hint-enter-from,
+.fade-hint-leave-to {
+    opacity: 0;
+}
+
+.btn-draft,
+.btn-publish {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+
+    .btn-draft,
+    .btn-publish {
+        padding: 9px 20px;
     }
 }
 
-.draft-top-btn {
+.btn-draft {
     background: #fff;
     color: #666;
     border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    font-weight: 600;
 }
 
-.draft-top-btn:hover {
+.btn-draft:hover:not(:disabled) {
     border-color: #999;
     color: #333;
 }
 
-.publish-top-btn {
+.btn-publish {
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-weight: 700;
-    padding: 10px 24px;
 }
 
-.publish-top-btn:hover {
-    background: linear-gradient(135deg, #5a6fd6, #6a3f96);
-    color: #fff;
+.btn-publish:hover:not(:disabled) {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-draft:disabled,
+.btn-publish:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 /* ==================== 双栏布局 ==================== */
 .publish-body {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 16px 80px;
     display: grid;
-    grid-template-columns: 1fr 300px;
+    grid-template-columns: 1fr;
     gap: 20px;
     align-items: start;
+}
+
+@media (min-width: 1024px) {
+    .publish-body {
+        grid-template-columns: 1fr 280px;
+        padding: 24px 24px 80px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .publish-body {
+        grid-template-columns: 1fr 300px;
+    }
 }
 
 /* ==================== 左侧编辑区 ==================== */
 .editor-left {
     background: #fff;
     border-radius: 16px;
-    padding: 28px;
+    padding: 20px;
     border: 1px solid rgba(0, 0, 0, 0.04);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+    min-width: 0;
+}
+
+@media (min-width: 768px) {
+    .editor-left {
+        padding: 28px;
+        border-radius: 20px;
+    }
 }
 
 .title-input :deep(.el-input__wrapper) {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     padding: 8px 0;
     box-shadow: none !important;
     border-bottom: 2px solid #f0f0f0;
     border-radius: 0;
+}
+
+@media (min-width: 768px) {
+    .title-input :deep(.el-input__wrapper) {
+        font-size: 22px;
+    }
 }
 
 .title-input :deep(.el-input__wrapper:focus-within) {
@@ -517,12 +648,14 @@ onBeforeUnmount(() => {
     color: #666;
     box-shadow: none !important;
     border: 1px solid #f0f0f0;
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 10px 12px;
+    transition: all 0.3s;
 }
 
 .desc-input :deep(.el-textarea__inner:focus) {
     border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.08);
 }
 
 .form-label {
@@ -543,14 +676,14 @@ onBeforeUnmount(() => {
 
 .cover-upload-area {
     width: 100%;
-    height: 160px;
+    height: 140px;
     border: 2px dashed #e0e0e0;
     border-radius: 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     color: #bbb;
     font-size: 13px;
     cursor: pointer;
@@ -558,10 +691,21 @@ onBeforeUnmount(() => {
     background: #fafafa;
 }
 
+@media (min-width: 768px) {
+    .cover-upload-area {
+        height: 160px;
+    }
+}
+
 .cover-upload-area:hover {
     border-color: #667eea;
     color: #667eea;
     background: #f8f9ff;
+}
+
+.upload-hint {
+    font-size: 11px;
+    color: #ddd;
 }
 
 .cover-preview-area {
@@ -595,8 +739,11 @@ onBeforeUnmount(() => {
 }
 
 .cover-action-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     color: #fff;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     background: rgba(0, 0, 0, 0.4);
     padding: 8px 20px;
@@ -605,19 +752,34 @@ onBeforeUnmount(() => {
 }
 
 .remove-cover-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     margin-top: 10px;
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 12px;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 0;
+}
+
+.remove-cover-btn:hover {
+    color: #FF6B6B;
 }
 
 /* 编辑器 */
 .editor-wrapper {
     border: 1px solid #e8e8e8;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
-    transition: border-color 0.3s;
+    transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 .editor-wrapper:focus-within {
     border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.08);
 }
 
 .editor-toolbar {
@@ -626,8 +788,15 @@ onBeforeUnmount(() => {
 }
 
 .editor-content {
-    min-height: 500px;
-    height: 600px;
+    min-height: 400px;
+    height: 500px;
+}
+
+@media (min-width: 768px) {
+    .editor-content {
+        min-height: 500px;
+        height: 600px;
+    }
 }
 
 .editor-footer {
@@ -637,41 +806,51 @@ onBeforeUnmount(() => {
 }
 
 .word-count {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: 12px;
     color: #ccc;
 }
 
 /* ==================== 右侧设置面板 ==================== */
 .editor-right {
-    position: sticky;
-    top: 90px;
     display: flex;
     flex-direction: column;
     gap: 14px;
 }
 
+@media (min-width: 1024px) {
+    .editor-right {
+        position: sticky;
+        top: 70px;
+    }
+}
+
 .setting-card {
     background: #fff;
     border-radius: 14px;
-    padding: 18px;
+    padding: 16px;
     border: 1px solid rgba(0, 0, 0, 0.04);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+}
+
+@media (min-width: 768px) {
+    .setting-card {
+        padding: 18px;
+    }
 }
 
 .setting-header {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-size: 14px;
     font-weight: 700;
     color: #1a1a2e;
     margin-bottom: 14px;
     padding-bottom: 10px;
     border-bottom: 1px solid #f5f5f5;
-}
-
-.setting-icon {
-    font-size: 16px;
 }
 
 .setting-body {
@@ -709,45 +888,40 @@ onBeforeUnmount(() => {
     color: #333;
 }
 
-/* ==================== 响应式 ==================== */
-@media (max-width: 1024px) {
-    .publish-body {
-        grid-template-columns: 1fr;
-    }
-
-    .editor-right {
-        position: static;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-    }
+/* 设置面板 Select 样式增强 */
+.setting-body :deep(.el-select .el-input__wrapper) {
+    border-radius: 10px;
+    background: #fafafa;
+    box-shadow: none;
+    border: 1px solid #f0f0f0;
+    transition: all 0.3s;
 }
 
+.setting-body :deep(.el-select .el-input__wrapper:hover) {
+    border-color: #ddd;
+}
+
+.setting-body :deep(.el-select .el-input__wrapper:focus-within) {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.08);
+    background: #fff;
+}
+
+/* ==================== 响应式 ==================== */
 @media (max-width: 640px) {
-    .top-bar {
-        flex-direction: column;
-        gap: 12px;
-        align-items: flex-start;
+    .top-bar-inner {
+        flex-wrap: wrap;
     }
 
     .top-bar-right {
         width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
     }
 
-    .publish-top-btn {
-        flex: 1;
-    }
-
-    .editor-right {
-        grid-template-columns: 1fr;
-    }
-
-    .editor-left {
-        padding: 18px;
-    }
-
-    .editor-content {
-        min-height: 350px;
-        height: 400px;
+    .auto-save-hint {
+        width: 100%;
+        justify-content: flex-end;
     }
 }
 </style>

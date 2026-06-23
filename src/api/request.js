@@ -2,7 +2,7 @@ import axios from "axios";
 import { ElMessage } from "element-plus";
 
 const service = axios.create({
-  baseURL: "http://localhost:3001/api", // 精准指向我们的后端 3001 集群
+  baseURL: "http://localhost:3001/api",
   timeout: 5000,
 });
 

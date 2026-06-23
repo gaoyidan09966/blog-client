@@ -1,14 +1,21 @@
 <template>
-    <div class="search-container">
-        <!-- 搜索头部 -->
+    <div class="search-page">
+        <!-- Hero（全宽） -->
         <div class="search-hero">
             <div class="hero-bg">
                 <div class="hero-orb orb-1"></div>
                 <div class="hero-orb orb-2"></div>
+                <div class="hero-orb orb-3"></div>
                 <div class="hero-grid"></div>
             </div>
             <div class="hero-content">
-                <div class="hero-badge">SEARCH</div>
+                <div class="hero-badge">
+                    <el-icon>
+                        <Search />
+                    </el-icon>
+                    SEARCH
+                </div>
+                <h1 class="hero-title">搜索</h1>
                 <div class="search-bar">
                     <el-input v-model="keyword" size="large" placeholder="输入关键词搜索文章..." clearable
                         @keyup.enter="doSearch" @clear="keyword = ''">
@@ -34,6 +41,17 @@
                 :class="'theme-' + (index % 4)" :style="{ animationDelay: index * 0.06 + 's' }"
                 @click="goToDetail(article.id)">
                 <div class="card-top-accent"></div>
+                <div class="card-cover" v-if="article.cover">
+                    <el-image :src="article.cover" fit="cover" class="cover-img">
+                        <template #error>
+                            <div class="cover-fallback">
+                                <el-icon :size="28">
+                                    <Picture />
+                                </el-icon>
+                            </div>
+                        </template>
+                    </el-image>
+                </div>
                 <div class="card-content">
                     <div class="card-header">
                         <div class="card-index">{{ String(index + 1).padStart(2, '0') }}</div>
@@ -53,27 +71,24 @@
                         </div>
                         <div class="card-tags" v-if="article.tag_names && article.tag_names.length">
                             <el-tag v-for="(name, i) in article.tag_names.slice(0, 3)" :key="i" size="small"
-                                effect="plain" round>
-                                {{ name }}
-                            </el-tag>
+                                effect="plain" round>{{ name }}</el-tag>
                         </div>
-                        <span class="meta-item">👁 {{ article.view_count }}</span>
+                        <span class="meta-item">
+                            <el-icon :size="13">
+                                <View />
+                            </el-icon>
+                            {{ article.view_count }}
+                        </span>
                     </div>
-                </div>
-                <div class="card-cover" v-if="article.cover">
-                    <el-image :src="article.cover" fit="cover" class="cover-img">
-                        <template #error>
-                            <div class="cover-fallback">📷</div>
-                        </template>
-                    </el-image>
                 </div>
             </div>
 
             <el-empty v-if="!loading && searched && articleList.length === 0" description="没有找到相关文章，换个关键词试试？" />
 
-            <!-- 未搜索时的推荐 -->
             <div class="search-placeholder" v-if="!searched && !loading">
-                <div class="placeholder-icon">🔍</div>
+                <el-icon :size="64" color="#ddd">
+                    <Search />
+                </el-icon>
                 <p>输入关键词，搜索你感兴趣的内容</p>
             </div>
         </div>
@@ -84,6 +99,8 @@
 import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { searchArticles } from '../../api/article';
+import { formatTime } from '../../utils/format';
+import { Search, View, Picture } from '@element-plus/icons-vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -95,14 +112,10 @@ const articleList = ref([]);
 
 const doSearch = async () => {
     if (!keyword.value.trim()) return;
-
-    // 更新 URL 参数，方便分享
     router.replace({ path: '/search', query: { keyword: keyword.value.trim() } });
-
     loading.value = true;
     searched.value = true;
     searchedKeyword.value = keyword.value.trim();
-
     try {
         const res = await searchArticles(keyword.value.trim());
         articleList.value = res.data.list;
@@ -114,7 +127,6 @@ const doSearch = async () => {
     }
 };
 
-// 高亮关键词
 const highlightKeyword = (text) => {
     if (!text || !searchedKeyword.value) return text;
     const escaped = searchedKeyword.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -122,56 +134,42 @@ const highlightKeyword = (text) => {
     return text.replace(regex, '<span class="highlight">$1</span>');
 };
 
-const goToDetail = (id) => {
-    router.push(`/article/${id}`);
-};
+const goToDetail = (id) => { router.push(`/article/${id}`); };
 
-const formatTime = (timeStr) => {
-    if (!timeStr) return '';
-    return new Date(timeStr).toLocaleString();
-};
-
-// 页面加载时，如果 URL 有 keyword 参数就自动搜索
 onMounted(() => {
     const q = route.query.keyword;
-    if (q) {
-        keyword.value = q;
-        doSearch();
-    }
+    if (q) { keyword.value = q; doSearch(); }
 });
 
-// 监听 URL 参数变化
 watch(() => route.query.keyword, (newVal) => {
-    if (newVal && newVal !== keyword.value) {
-        keyword.value = newVal;
-        doSearch();
-    }
+    if (newVal && newVal !== keyword.value) { keyword.value = newVal; doSearch(); }
 });
 </script>
 
 <style scoped>
-.search-container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 20px 80px;
+.search-page {
+    background: #f5f6f8;
+    min-height: 100vh;
 }
 
-/* ==================== Hero ==================== */
+/* ==================== Hero（全宽） ==================== */
 .search-hero {
     position: relative;
-    border-radius: 28px;
-    overflow: hidden;
-    margin-top: 30px;
-    padding: 40px 20px;
+    padding: 50px 20px;
     text-align: center;
-    background: linear-gradient(135deg, #fafbff 0%, #f0f4ff 40%, #fff5f5 100%);
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 40%, #fdf2f8 100%);
+}
+
+@media (min-width: 768px) {
+    .search-hero {
+        padding: 60px 20px;
+    }
 }
 
 .hero-bg {
     position: absolute;
     inset: 0;
-    overflow: hidden;
 }
 
 .hero-grid {
@@ -191,21 +189,49 @@ watch(() => route.query.keyword, (newVal) => {
 }
 
 .orb-1 {
-    width: 200px;
-    height: 200px;
+    width: 160px;
+    height: 160px;
     background: #A78BFA;
-    top: -50px;
-    left: -30px;
+    top: -40px;
+    left: 10%;
     animation: orbDrift 8s ease-in-out infinite;
 }
 
 .orb-2 {
-    width: 160px;
-    height: 160px;
-    background: #4ECDC4;
-    bottom: -40px;
-    right: -30px;
+    width: 130px;
+    height: 130px;
+    background: #7C3AED;
+    bottom: -30px;
+    right: 10%;
     animation: orbDrift 10s ease-in-out infinite reverse;
+}
+
+.orb-3 {
+    width: 90px;
+    height: 90px;
+    background: #F472B6;
+    top: 20%;
+    right: 20%;
+    animation: orbDrift 9s ease-in-out infinite 2s;
+}
+
+@media (min-width: 768px) {
+    .orb-1 {
+        width: 200px;
+        height: 200px;
+        top: -50px;
+    }
+
+    .orb-2 {
+        width: 160px;
+        height: 160px;
+        bottom: -40px;
+    }
+
+    .orb-3 {
+        width: 120px;
+        height: 120px;
+    }
 }
 
 @keyframes orbDrift {
@@ -230,7 +256,9 @@ watch(() => route.query.keyword, (newVal) => {
 }
 
 .hero-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 4px 18px;
     background: linear-gradient(135deg, #A78BFA, #7C3AED);
     color: #fff;
@@ -238,30 +266,56 @@ watch(() => route.query.keyword, (newVal) => {
     font-weight: 800;
     border-radius: 20px;
     letter-spacing: 3px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
+.hero-title {
+    font-size: 28px;
+    font-weight: 900;
+    color: #1a1a2e;
+    margin: 0 0 20px;
+}
+
+@media (min-width: 768px) {
+    .hero-title {
+        font-size: 34px;
+    }
+}
+
+/* 搜索框 */
 .search-bar {
-    max-width: 600px;
+    max-width: 560px;
     margin: 0 auto 16px;
 }
 
 .search-bar :deep(.el-input__wrapper) {
     border-radius: 14px;
     padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    transition: all 0.3s;
+}
+
+.search-bar :deep(.el-input__wrapper:focus-within) {
+    box-shadow: 0 4px 24px rgba(167, 139, 250, 0.15);
+    border-color: rgba(167, 139, 250, 0.3);
 }
 
 .search-bar :deep(.el-input-group__append) {
     border-radius: 0 14px 14px 0;
-    background: #1a1a2e;
+    background: linear-gradient(135deg, #A78BFA, #7C3AED);
     color: #fff;
     border: none;
+    box-shadow: none;
 }
 
 .search-bar :deep(.el-input-group__append .el-button) {
     color: #fff;
     font-weight: 600;
+    border: none;
+    background: transparent;
 }
 
 .search-summary {
@@ -271,25 +325,31 @@ watch(() => route.query.keyword, (newVal) => {
 }
 
 .search-summary strong {
-    color: #1a1a2e;
+    color: #A78BFA;
     font-weight: 800;
 }
 
 /* ==================== 搜索结果 ==================== */
 .results-section {
-    margin-top: 30px;
-    min-height: 200px;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+}
+
+@media (min-width: 768px) {
+    .results-section {
+        padding: 30px 20px 80px;
+    }
 }
 
 .article-card {
     position: relative;
     display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 16px;
+    gap: 16px;
+    margin-bottom: 14px;
     background: #fff;
-    border-radius: 18px;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     overflow: hidden;
@@ -297,6 +357,15 @@ watch(() => route.query.keyword, (newVal) => {
     transform: translateY(15px);
     animation: fadeInUp 0.5s ease forwards;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+}
+
+@media (min-width: 768px) {
+    .article-card {
+        gap: 0;
+        align-items: center;
+        border-radius: 18px;
+        margin-bottom: 16px;
+    }
 }
 
 @keyframes fadeInUp {
@@ -311,7 +380,8 @@ watch(() => route.query.keyword, (newVal) => {
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
+    height: 3px;
+    z-index: 2;
 }
 
 .theme-0 .card-top-accent {
@@ -351,10 +421,61 @@ watch(() => route.query.keyword, (newVal) => {
     box-shadow: 0 14px 35px rgba(252, 211, 77, 0.15);
 }
 
+/* 封面图（手机端也显示） */
+.card-cover {
+    width: 100%;
+    height: 140px;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+@media (min-width: 768px) {
+    .card-cover {
+        width: 170px;
+        height: 100%;
+        min-height: 130px;
+    }
+
+    .card-cover::before {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: rgba(0, 0, 0, 0.04);
+        z-index: 2;
+    }
+}
+
+.cover-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.cover-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fb;
+    color: #ddd;
+}
+
+/* 内容区 */
 .card-content {
     flex: 1;
-    padding: 20px 22px;
+    padding: 16px;
     min-width: 0;
+}
+
+@media (min-width: 768px) {
+    .card-content {
+        padding: 20px 22px;
+    }
 }
 
 .card-header {
@@ -362,12 +483,12 @@ watch(() => route.query.keyword, (newVal) => {
     align-items: center;
     gap: 10px;
     margin-bottom: 10px;
+    flex-wrap: wrap;
 }
 
 .card-index {
     font-size: 13px;
     font-weight: 900;
-    color: #ddd;
 }
 
 .theme-0 .card-index {
@@ -419,11 +540,17 @@ watch(() => route.query.keyword, (newVal) => {
 }
 
 .card-title {
-    font-size: 17px;
+    font-size: 15px;
     color: #1a1a2e;
     margin: 0 0 6px;
     font-weight: 700;
     line-height: 1.4;
+}
+
+@media (min-width: 768px) {
+    .card-title {
+        font-size: 17px;
+    }
 }
 
 .card-desc {
@@ -438,11 +565,10 @@ watch(() => route.query.keyword, (newVal) => {
     -webkit-box-orient: vertical;
 }
 
-/* 搜索关键词高亮 */
 :deep(.highlight) {
-    color: #FF6B6B;
+    color: #A78BFA;
     font-weight: 700;
-    background: rgba(255, 107, 107, 0.08);
+    background: rgba(167, 139, 250, 0.1);
     padding: 0 2px;
     border-radius: 3px;
 }
@@ -451,13 +577,14 @@ watch(() => route.query.keyword, (newVal) => {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 .card-author {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #555;
 }
@@ -496,79 +623,27 @@ watch(() => route.query.keyword, (newVal) => {
 }
 
 .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: 12px;
     color: #bbb;
     margin-left: auto;
-}
-
-.card-cover {
-    width: 170px;
-    min-height: 130px;
-    flex-shrink: 0;
-    position: relative;
-}
-
-.card-cover::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: rgba(0, 0, 0, 0.04);
-}
-
-.cover-img {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-.cover-fallback {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f8f9fb;
-    font-size: 28px;
 }
 
 /* ==================== 占位提示 ==================== */
 .search-placeholder {
     text-align: center;
     padding: 60px 20px;
-    color: #ccc;
-}
-
-.placeholder-icon {
-    font-size: 48px;
-    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
 }
 
 .search-placeholder p {
     font-size: 15px;
+    color: #ccc;
     margin: 0;
-}
-
-/* ==================== 响应式 ==================== */
-@media (max-width: 768px) {
-    .article-card {
-        flex-direction: column;
-    }
-
-    .card-cover {
-        width: 100%;
-        min-height: 140px;
-        max-height: 180px;
-    }
-
-    .card-cover::before {
-        width: 100%;
-        height: 1px;
-        top: 0;
-        left: 0;
-        bottom: auto;
-    }
 }
 </style>
