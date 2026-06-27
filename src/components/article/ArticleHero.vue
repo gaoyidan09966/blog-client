@@ -83,14 +83,16 @@ const readTime = computed(() => {
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
 }
 
+/* ==================== 封面图修复 ==================== */
 .cover-wrapper {
     position: relative;
-    max-height: 380px;
+    height: 380px;
     overflow: hidden;
 }
 
 .detail-cover {
     width: 100%;
+    height: 100%;
     display: block;
 }
 
@@ -103,6 +105,7 @@ const readTime = computed(() => {
     background: linear-gradient(transparent, rgba(255, 255, 255, 0.9));
 }
 
+/* ==================== 文章头部 ==================== */
 .article-header {
     padding: 32px 40px 24px;
 }
@@ -195,9 +198,10 @@ const readTime = computed(() => {
     border-radius: 20px;
 }
 
+/* ==================== 移动端适配 ==================== */
 @media (max-width: 768px) {
     .cover-wrapper {
-        max-height: 220px;
+        height: 220px;
     }
 
     .article-header {

@@ -1,63 +1,53 @@
 <template>
     <div class="about-page" @mousemove="onMouseMove">
-        <!-- 鼠标光晕 -->
-        <div class="cursor-glow" :style="{ left: cursorX + 'px', top: cursorY + 'px' }"></div>
+        <div class="cursor-glow" :style="glowPos"></div>
 
-        <!-- 1. Hero -->
-        <section class="hero-section">
+        <!-- ==================== Hero ==================== -->
+        <section class="hero">
             <div class="hero-bg">
                 <div class="hero-gradient"></div>
                 <div class="hero-grid"></div>
                 <div class="hero-noise"></div>
                 <div class="hero-orbs">
-                    <div class="h-orb h-orb-1"></div>
-                    <div class="h-orb h-orb-2"></div>
-                    <div class="h-orb h-orb-3"></div>
-                    <div class="h-orb h-orb-4"></div>
+                    <div v-for="n in 4" :key="n" :class="['h-orb', `h-orb-${n}`]"></div>
                 </div>
                 <div class="hero-particles">
-                    <div v-for="i in 40" :key="i" class="particle" :style="particleStyle(i)"></div>
+                    <div v-for="(p, i) in particles" :key="i" class="particle" :style="p"></div>
                 </div>
-                <!-- 浮动几何 -->
                 <div class="floating-shapes">
-                    <div class="shape shape-1"></div>
-                    <div class="shape shape-2"></div>
-                    <div class="shape shape-3"></div>
-                    <div class="shape shape-4"></div>
-                    <div class="shape shape-5"></div>
+                    <div v-for="n in 5" :key="n" :class="['shape', `shape-${n}`]"></div>
                 </div>
             </div>
+
             <div class="hero-content" :style="parallaxStyle">
-                <div class="hero-badge float-badge">
+                <div class="hero-badge">
                     <el-icon>
                         <User />
-                    </el-icon>
-                    ABOUT ME
+                    </el-icon> ABOUT ME
                 </div>
                 <h1 class="hero-title">
                     你好，我是
-                    <span class="title-highlight shimmer-text">{{ admin.nickname || '拾光笔记' }}</span>
+                    <span class="gradient-text">{{ admin.nickname || '拾光笔记' }}</span>
                 </h1>
                 <p class="hero-subtitle">
-                    <span class="typing-text">{{ displayText }}</span>
-                    <span class="typing-cursor">|</span>
+                    <span>{{ displayText }}</span><span class="typing-cursor">|</span>
                 </p>
                 <div class="hero-stats">
-                    <div class="stat-item" v-for="(stat, i) in heroStats" :key="i">
+                    <div class="stat-item" v-for="(s, i) in heroStats" :key="i">
                         <div class="stat-ring">
-                            <svg class="stat-ring-svg" viewBox="0 0 36 36">
-                                <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.1)"
+                            <svg viewBox="0 0 36 36">
+                                <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,.1)"
                                     stroke-width="2" />
-                                <circle cx="18" cy="18" r="15.5" fill="none" :stroke="stat.color" stroke-width="2"
-                                    stroke-linecap="round" :stroke-dasharray="`${stat.percent} ${100 - stat.percent}`"
-                                    stroke-dashoffset="25" class="stat-ring-progress" />
+                                <circle cx="18" cy="18" r="15.5" fill="none" :stroke="s.color" stroke-width="2"
+                                    stroke-linecap="round" :stroke-dasharray="`${s.percent} ${100 - s.percent}`"
+                                    stroke-dashoffset="25" class="ring-anim" />
                             </svg>
-                            <el-icon class="stat-ring-icon" :size="14">
-                                <component :is="stat.icon" />
+                            <el-icon class="ring-icon" :size="14">
+                                <component :is="s.icon" />
                             </el-icon>
                         </div>
-                        <span class="stat-num">{{ stat.value }}</span>
-                        <span class="stat-label">{{ stat.label }}</span>
+                        <span class="stat-num">{{ s.value }}</span>
+                        <span class="stat-label">{{ s.label }}</span>
                     </div>
                 </div>
                 <div class="scroll-hint">
@@ -69,51 +59,48 @@
             </div>
         </section>
 
-        <!-- 2. 关于博主 -->
-        <section class="section section-about" ref="aboutRef">
-            <div class="section-inner">
-                <div class="section-header reveal-up">
-                    <span class="section-tag glow-tag">INTRODUCE</span>
+        <!-- ==================== 关于博主 ==================== -->
+        <section class="section sec-about" ref="aboutRef">
+            <div class="container">
+                <div class="section-head reveal">
+                    <span class="section-tag">INTRODUCE</span>
                     <h2 class="section-title">关于博主</h2>
                     <p class="section-desc">了解我的故事和技术历程</p>
                 </div>
                 <div class="about-grid">
-                    <div class="about-card-left tilt-card" :class="{ 'show': aboutVisible }" @mousemove="onTiltMove"
-                        @mouseleave="onTiltLeave">
+                    <div class="about-sidebar reveal tilt-card" @mousemove="onTiltMove" @mouseleave="onTiltLeave">
                         <div class="card-shine"></div>
-                        <div class="avatar-wrapper">
+                        <div class="avatar-wrap">
                             <div class="avatar-ring">
                                 <div class="ring-spin"></div>
-                                <el-avatar :size="100" :src="admin.avatar" class="about-avatar">
-                                    {{ admin.nickname?.charAt(0) || 'A' }}
-                                </el-avatar>
                             </div>
-                            <div class="avatar-glow"></div>
+                            <el-avatar :size="100" :src="admin.avatar" class="about-avatar">
+                                {{ admin.nickname?.charAt(0) || 'A' }}
+                            </el-avatar>
                         </div>
-                        <h3 class="about-name">{{ admin.nickname || '拾光笔记' }}</h3>
-                        <p class="about-role">全栈开发者 · 博客作者</p>
-                        <div class="about-social">
-                            <a class="social-link magnetic" v-for="(s, i) in socials" :key="i" :title="s.label">
+                        <h3>{{ admin.nickname || '拾光笔记' }}</h3>
+                        <p class="muted">全栈开发者 · 优秀作者</p>
+                        <div class="socials">
+                            <a v-for="(s, i) in socials" :key="i" class="social-btn" :title="s.label">
                                 <el-icon :size="18">
                                     <component :is="s.icon" />
                                 </el-icon>
                             </a>
                         </div>
                     </div>
-                    <div class="about-card-right" :class="{ 'show': aboutVisible }">
-                        <div class="about-text tilt-card" @mousemove="onTiltMove" @mouseleave="onTiltLeave">
+                    <div class="about-main">
+                        <div class="about-text reveal tilt-card" @mousemove="onTiltMove" @mouseleave="onTiltLeave">
                             <div class="card-shine"></div>
-                            <p>欢迎来到「拾光笔记」，这是我个人的技术博客。</p>
+                            <p>欢迎来到「拾光笔记」，这是我个人的技术网站。</p>
                             <p>我是一名全栈开发者，热衷于探索前后端技术，喜欢用代码解决问题，也喜欢用文字记录学习过程中的点滴。</p>
-                            <p>这个博客使用 <strong>Vue3 + Express + MySQL</strong> 全栈开发，从前端到后端、从数据库到部署，都是我亲手搭建的。</p>
+                            <p>这个网站使用 <strong>Vue3 + Express + MySQL</strong> 全栈开发，从前端到后端、从数据库到部署，都是独立开发完成。</p>
                             <p>在这里，你可以找到技术分享、项目实战、学习笔记等内容。希望这些文章能对你有所帮助。</p>
                         </div>
                         <div class="highlight-grid">
-                            <div class="highlight-card tilt-card" v-for="(h, i) in highlights" :key="i"
-                                :style="{ transitionDelay: (i * 0.1) + 's' }" @mousemove="onTiltMove"
-                                @mouseleave="onTiltLeave">
+                            <div v-for="(h, i) in highlights" :key="i" class="highlight-card reveal tilt-card"
+                                @mousemove="onTiltMove" @mouseleave="onTiltLeave">
                                 <div class="card-shine"></div>
-                                <div class="hl-icon-glow" :style="{ background: h.color }"></div>
+                                <div class="hl-glow" :style="{ background: h.color }"></div>
                                 <el-icon :size="22" :color="h.color">
                                     <component :is="h.icon" />
                                 </el-icon>
@@ -128,52 +115,49 @@
             </div>
         </section>
 
-        <!-- 3. 技术栈 -->
-        <section class="section section-tech" ref="techRef">
-            <div class="section-inner">
-                <div class="section-header reveal-up">
-                    <span class="section-tag glow-tag">TECH STACK</span>
+        <!-- ==================== 技术栈 ==================== -->
+        <section class="section sec-tech" ref="techRef">
+            <div class="container">
+                <div class="section-head reveal">
+                    <span class="section-tag">TECH STACK</span>
                     <h2 class="section-title">技术栈</h2>
-                    <p class="section-desc">这个博客使用到的技术</p>
+                    <p class="section-desc">这个网站使用到的技术</p>
                 </div>
                 <div class="tech-grid">
-                    <div v-for="(tech, index) in techStack" :key="index" class="tech-card tilt-card"
-                        :class="{ 'show': techVisible }" :style="{ transitionDelay: index * 0.08 + 's' }"
-                        @mousemove="onTiltMove" @mouseleave="onTiltLeave">
+                    <div v-for="(t, i) in techStack" :key="i" class="tech-card reveal tilt-card" @mousemove="onTiltMove"
+                        @mouseleave="onTiltLeave">
                         <div class="card-shine"></div>
-                        <div class="tech-icon-box" :style="{ background: tech.bg, color: tech.color }">
+                        <div class="icon-box" :style="{ background: t.bg, color: t.color }">
                             <el-icon :size="24">
-                                <component :is="tech.icon" />
+                                <component :is="t.icon" />
                             </el-icon>
                         </div>
-                        <h4 class="tech-name">{{ tech.name }}</h4>
-                        <p class="tech-desc">{{ tech.desc }}</p>
-                        <div class="tech-bar">
-                            <div class="tech-bar-fill" :style="{ width: tech.level + '%', background: tech.color }">
-                            </div>
+                        <h4>{{ t.name }}</h4>
+                        <p class="muted">{{ t.desc }}</p>
+                        <div class="bar">
+                            <div class="bar-fill" :style="{ width: t.level + '%', background: t.color }"></div>
                         </div>
-                        <span class="tech-level">{{ tech.level }}%</span>
+                        <span class="tech-level">{{ t.level }}%</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 4. 发展历程 -->
-        <section class="section section-timeline" ref="timelineRef">
-            <div class="section-inner">
-                <div class="section-header reveal-up">
-                    <span class="section-tag glow-tag">JOURNEY</span>
+        <!-- ==================== 发展历程 ==================== -->
+        <section class="section sec-timeline" ref="timelineRef">
+            <div class="container">
+                <div class="section-head reveal">
+                    <span class="section-tag">JOURNEY</span>
                     <h2 class="section-title">发展历程</h2>
-                    <p class="section-desc">博客从零到一的成长故事</p>
+                    <p class="section-desc">网站从零到一的成长故事</p>
                 </div>
                 <div class="timeline">
-                    <div class="timeline-track">
-                        <div class="timeline-track-glow"></div>
+                    <div class="tl-track">
+                        <div class="tl-track-glow"></div>
                     </div>
-                    <div v-for="(item, index) in timeline" :key="index" class="timeline-item"
-                        :class="[index % 2 === 0 ? 'tl-left' : 'tl-right', { 'show': timelineVisible }]"
-                        :style="{ transitionDelay: index * 0.15 + 's' }">
-                        <div class="tl-dot pulse-dot" :style="{ background: item.color, '--dot-color': item.color }">
+                    <div v-for="(item, i) in timeline" :key="i"
+                        :class="['tl-item', 'reveal', i % 2 === 0 ? 'tl-left' : 'tl-right']">
+                        <div class="tl-dot" :style="{ '--dot-color': item.color, background: item.color }">
                             <el-icon :size="14" color="#fff">
                                 <component :is="item.icon" />
                             </el-icon>
@@ -181,57 +165,55 @@
                         <div class="tl-card tilt-card" @mousemove="onTiltMove" @mouseleave="onTiltLeave">
                             <div class="card-shine"></div>
                             <span class="tl-date" :style="{ color: item.color }">{{ item.date }}</span>
-                            <h4 class="tl-title">{{ item.title }}</h4>
-                            <p class="tl-desc">{{ item.desc }}</p>
+                            <h4>{{ item.title }}</h4>
+                            <p>{{ item.desc }}</p>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 5. 博客数据 -->
-        <section class="section section-data" ref="dataRef">
-            <div class="section-inner">
-                <div class="section-header reveal-up">
-                    <span class="section-tag glow-tag">BLOG DATA</span>
-                    <h2 class="section-title">博客数据</h2>
-                    <p class="section-desc">截至目前的博客运营数据</p>
+        <!-- ==================== 网站数据 ==================== -->
+        <section class="section sec-data" ref="dataRef">
+            <div class="container">
+                <div class="section-head reveal">
+                    <span class="section-tag">BLOG DATA</span>
+                    <h2 class="section-title">网站数据</h2>
+                    <p class="section-desc">截至目前的网站运营数据</p>
                 </div>
                 <div class="data-grid">
-                    <div class="data-card" v-for="(item, index) in dataCards" :key="index"
-                        :class="{ 'show': dataVisible }" :style="{ transitionDelay: index * 0.1 + 's' }">
-                        <div class="data-icon-box" :style="{ background: item.bg }">
-                            <el-icon :size="24" :color="item.color">
-                                <component :is="item.icon" />
+                    <div v-for="(d, i) in dataCards" :key="i" class="data-card reveal" :style="{ '--accent': d.color }">
+                        <div class="icon-box" :style="{ background: d.bg }">
+                            <el-icon :size="24" :color="d.color">
+                                <component :is="d.icon" />
                             </el-icon>
                         </div>
-                        <div class="data-num">{{ item.value }}</div>
-                        <div class="data-label">{{ item.label }}</div>
+                        <div class="data-num">{{ d.value }}</div>
+                        <div class="data-label">{{ d.label }}</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 6. 联系方式 -->
-        <section class="section section-contact" ref="contactRef">
-            <div class="section-inner">
-                <div class="section-header reveal-up">
-                    <span class="section-tag glow-tag">CONTACT</span>
+        <!-- ==================== 联系方式 ==================== -->
+        <section class="section sec-contact" ref="contactRef">
+            <div class="container">
+                <div class="section-head reveal">
+                    <span class="section-tag">CONTACT</span>
                     <h2 class="section-title">联系方式</h2>
                     <p class="section-desc">欢迎与我交流</p>
                 </div>
                 <div class="contact-grid">
-                    <div class="contact-card tilt-card" v-for="(item, index) in contacts" :key="index"
-                        :class="{ 'show': contactVisible }" :style="{ transitionDelay: index * 0.1 + 's' }"
+                    <div v-for="(c, i) in contacts" :key="i" class="contact-card reveal tilt-card"
                         @mousemove="onTiltMove" @mouseleave="onTiltLeave">
                         <div class="card-shine"></div>
-                        <div class="contact-icon-box" :style="{ background: item.bg }">
-                            <el-icon :size="22" :color="item.color">
-                                <component :is="item.icon" />
+                        <div class="icon-box" :style="{ background: c.bg }">
+                            <el-icon :size="22" :color="c.color">
+                                <component :is="c.icon" />
                             </el-icon>
                         </div>
-                        <h4 class="contact-label">{{ item.label }}</h4>
-                        <p class="contact-value">{{ item.value }}</p>
+                        <h4>{{ c.label }}</h4>
+                        <p>{{ c.value }}</p>
                     </div>
                 </div>
             </div>
@@ -240,7 +222,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, markRaw } from 'vue';
 import { getAdminInfo } from '../../api/user';
 import request from '../../api/request';
 import {
@@ -250,32 +232,27 @@ import {
     Message, Link, ChatLineRound, Flag, Trophy, Medal
 } from '@element-plus/icons-vue';
 
+/* ========== 图标缓存（避免响应式开销） ========== */
+const I = {
+    User: markRaw(User), Document: markRaw(Document), PriceTag: markRaw(PriceTag),
+    FolderOpened: markRaw(FolderOpened), ChatDotRound: markRaw(ChatDotRound),
+    Monitor: markRaw(Monitor), Connection: markRaw(Connection), Coin: markRaw(Coin),
+    Cpu: markRaw(Cpu), DataLine: markRaw(DataLine), Promotion: markRaw(Promotion),
+    EditPen: markRaw(EditPen), Brush: markRaw(Brush), Sunrise: markRaw(Sunrise),
+    Aim: markRaw(Aim), Message: markRaw(Message), Link: markRaw(Link),
+    ChatLineRound: markRaw(ChatLineRound), Flag: markRaw(Flag),
+    Trophy: markRaw(Trophy), Medal: markRaw(Medal),
+};
+
+/* ========== 响应式状态 ========== */
 const admin = ref({});
-const cursorX = ref(-100);
-const cursorY = ref(-100);
-const mouseX = ref(0);
-const mouseY = ref(0);
+const cursorX = ref(-100), cursorY = ref(-100);
+const mouseX = ref(0), mouseY = ref(0);
+const articleCount = ref(0), tagCount = ref(0), categoryCount = ref(0), commentCount = ref(0);
 
-// 各区块可见性
-const aboutVisible = ref(false);
-const techVisible = ref(false);
-const timelineVisible = ref(false);
-const dataVisible = ref(false);
-const contactVisible = ref(false);
+const aboutRef = ref(null), techRef = ref(null), timelineRef = ref(null), dataRef = ref(null), contactRef = ref(null);
 
-const aboutRef = ref(null);
-const techRef = ref(null);
-const timelineRef = ref(null);
-const dataRef = ref(null);
-const contactRef = ref(null);
-
-// 数据
-const articleCount = ref(0);
-const tagCount = ref(0);
-const categoryCount = ref(0);
-const commentCount = ref(0);
-
-// 打字机效果
+/* ========== 打字机效果 ========== */
 const fullText = '一个热爱技术与生活的开发者，用代码记录时光，用文字书写人生';
 const displayText = ref('');
 let typeTimer = null;
@@ -284,204 +261,236 @@ const startTyping = () => {
     let i = 0;
     const type = () => {
         if (i < fullText.length) {
-            displayText.value += fullText[i];
-            i++;
+            displayText.value += fullText[i++];
             typeTimer = setTimeout(type, 60 + Math.random() * 40);
         } else {
-            // 打完后等一下再删除重打
-            typeTimer = setTimeout(() => {
-                displayText.value = '';
-                i = 0;
-                type();
-            }, 4000);
+            typeTimer = setTimeout(() => { displayText.value = ''; i = 0; type(); }, 4000);
         }
     };
     type();
 };
 
-// Hero 视差
+/* ========== 计算属性 ========== */
+const glowPos = computed(() => ({ left: cursorX.value + 'px', top: cursorY.value + 'px' }));
+
 const parallaxStyle = computed(() => {
     const x = (mouseX.value - window.innerWidth / 2) * 0.02;
     const y = (mouseY.value - window.innerHeight / 2) * 0.02;
     return { transform: `translate(${x}px, ${y}px)` };
 });
 
-// 鼠标事件
+const heroStats = computed(() => [
+    { icon: I.Document, label: '篇文章', value: articleCount.value, color: '#667eea', percent: 80 },
+    { icon: I.PriceTag, label: '个标签', value: tagCount.value, color: '#4ECDC4', percent: 65 },
+    { icon: I.FolderOpened, label: '个分类', value: categoryCount.value, color: '#FF6B6B', percent: 50 },
+    { icon: I.ChatDotRound, label: '条评论', value: commentCount.value, color: '#FCD34D', percent: 70 },
+]);
+
+const particles = computed(() =>
+    Array.from({ length: 40 }, () => ({
+        width: Math.random() * 4 + 2 + 'px',
+        height: Math.random() * 4 + 2 + 'px',
+        left: Math.random() * 100 + '%',
+        top: Math.random() * 100 + '%',
+        animationDelay: Math.random() * 8 + 's',
+        animationDuration: Math.random() * 15 + 10 + 's',
+        opacity: Math.random() * 0.4 + 0.1,
+    }))
+);
+
+/* ========== 静态数据 ========== */
+const socials = [
+    { icon: I.Message, label: '邮件' },
+    { icon: I.Link, label: 'GitHub' },
+    { icon: I.ChatLineRound, label: '微信' },
+];
+
+const highlights = [
+    { icon: I.Promotion, title: '全栈开发', desc: 'Vue3 + Express + MySQL', color: '#667eea' },
+    { icon: I.EditPen, title: '技术写作', desc: '记录学习，分享经验', color: '#4ECDC4' },
+    { icon: I.Brush, title: 'UI 设计', desc: '注重用户体验与视觉美感', color: '#FF6B6B' },
+    { icon: I.Sunrise, title: '持续学习', desc: '保持好奇心，拥抱新技术', color: '#F59E0B' },
+];
+
+const techStack = [
+    { icon: I.Monitor, name: 'Vue3', desc: '前端框架', level: 90, color: '#4FC08D', bg: '#f0fdf4' },
+    { icon: I.Connection, name: 'Express', desc: '后端框架', level: 85, color: '#333', bg: '#f5f5f5' },
+    { icon: I.Coin, name: 'MySQL', desc: '关系型数据库', level: 80, color: '#4479A1', bg: '#eff6ff' },
+    { icon: I.Cpu, name: 'Vite', desc: '构建工具', level: 88, color: '#646CFF', bg: '#f5f3ff' },
+    { icon: I.Aim, name: 'Element Plus', desc: 'UI 组件库', level: 92, color: '#409EFF', bg: '#ecf5ff' },
+    { icon: I.DataLine, name: 'JWT', desc: '身份认证', level: 78, color: '#F59E0B', bg: '#fffbeb' },
+    { icon: I.Link, name: 'RESTful API', desc: '接口设计', level: 85, color: '#8B5CF6', bg: '#f5f3ff' },
+    { icon: I.Brush, name: 'CSS3', desc: '样式与动画', level: 88, color: '#E44D26', bg: '#fff7ed' },
+];
+
+const timeline = [
+    { date: '2026年5月', title: '需求分析与立项', desc: '明确博客系统定位，确定支持文章发布、分类管理、评论互动、商品展示等核心功能，完成需求文档编写', color: '#667eea', icon: I.Flag },
+    { date: '2026年5月', title: '技术选型', desc: '前端 Vue3 + uni-app，后端 Express + MySQL，管理端 React + Vite，确定项目整体技术栈', color: '#764ba2', icon: I.DataLine },
+    { date: '2026年5月', title: '数据库设计', desc: '设计用户表、文章表、分类表、标签表、评论表、商品表、订单表等核心数据模型，建立表关联', color: '#4ECDC4', icon: I.Trophy },
+    { date: '2026年6月初', title: '后端基础架构搭建', desc: '初始化 Express 项目，配置中间件（CORS、JWT、文件上传），搭建路由与控制器分层架构', color: '#667eea', icon: I.Flag },
+    { date: '2026年6月初', title: '用户认证系统', desc: '实现注册登录、JWT 鉴权、角色权限（管理员/普通用户）、bcrypt 密码加密', color: '#F59E0B', icon: I.Medal },
+    { date: '2026年6月中', title: '文章管理 API', desc: '完成文章 CRUD、分页查询、分类筛选、标签关联、上下篇导航、富文本内容存储', color: '#4ECDC4', icon: I.Trophy },
+    { date: '2026年6月中', title: '分类与标签系统', desc: '实现分类树形结构、标签多对多关联、按分类/标签筛选文章等接口', color: '#764ba2', icon: I.DataLine },
+    { date: '2026年6月中', title: '评论系统', desc: '支持文章评论、回复、评论分页、最新评论查询、评论数量统计', color: '#FF6B6B', icon: I.Medal },
+    { date: '2026年6月下', title: '商品与订单模块', desc: '实现商品管理、商品分类、购物车逻辑、订单创建与查询接口', color: '#F59E0B', icon: I.Trophy },
+    { date: '2026年6月下', title: '图片上传与管理', desc: '基于 multer 实现图片上传、本地存储、缩略图生成、文件管理', color: '#667eea', icon: I.Flag },
+    { date: '2026年7月初', title: 'PC 管理端启动', desc: '基于 React + Vite 搭建后台管理面板，实现登录页、侧边栏导航、顶部导航布局', color: '#764ba2', icon: I.DataLine },
+    { date: '2026年7月初', title: '仪表盘与数据统计', desc: '集成 ECharts 图表，实现文章数量、访问量、评论量、用户增长等数据可视化面板', color: '#4ECDC4', icon: I.Trophy },
+    { date: '2026年7月中', title: '文章管理后台', desc: '实现文章列表（搜索、筛选、排序）、富文本编辑器、Markdown 编辑器、封面图上传、草稿箱', color: '#FF6B6B', icon: I.Medal },
+    { date: '2026年7月中', title: '分类标签管理后台', desc: '分类的增删改查、拖拽排序；标签的颜色配置、批量操作、使用频次统计', color: '#F59E0B', icon: I.Flag },
+    { date: '2026年7月中', title: '用户与评论管理', desc: '用户列表、角色分配、禁用启用；评论审核、批量删除、敏感词过滤', color: '#667eea', icon: I.DataLine },
+    { date: '2026年7月下', title: '商品管理后台', desc: '商品上下架、库存管理、价格设置、商品分类、轮播图管理', color: '#764ba2', icon: I.Trophy },
+    { date: '2026年7月下', title: '站点设置模块', desc: '网站名称、Logo、SEO 信息、公告管理、关于页信息配置', color: '#4ECDC4', icon: I.Medal },
+    { date: '2026年8月初', title: '小程序项目启动', desc: '基于 uni-app + Vue3 搭建微信小程序项目，配置 TabBar、路由、请求封装', color: '#FF6B6B', icon: I.Flag },
+    { date: '2026年8月初', title: '首页与文章模块', desc: '实现轮播图、推荐文章、文章列表（分页加载）、文章详情（目录解析、阅读进度、点赞收藏）', color: '#F59E0B', icon: I.DataLine },
+    { date: '2026年8月中', title: '分类与搜索功能', desc: '分类页面（文章/商品分类切换）、标签筛选、全文搜索、搜索历史、热门文章推荐', color: '#667eea', icon: I.Trophy },
+    { date: '2026年8月中', title: '商城模块开发', desc: '商品列表（分类筛选、价格/销量排序）、商品详情、购物车（增删改查、全选、数量调整）', color: '#764ba2', icon: I.Medal },
+    { date: '2026年8月中', title: '订单系统', desc: '订单确认页（地址选择、备注）、订单创建、订单列表（按状态筛选）、删除订单', color: '#4ECDC4', icon: I.Flag },
+    { date: '2026年8月下', title: '个人中心', desc: '微信登录授权、浏览历史、我的收藏、消息中心（评论通知、系统通知）、缓存管理', color: '#FF6B6B', icon: I.DataLine },
+    { date: '2026年8月下', title: '自定义组件开发', desc: '封装 NavBar 导航栏、ArticleCard 文章卡片、LoadMore 加载状态等通用组件', color: '#F59E0B', icon: I.Trophy },
+    { date: '2026年9月初', title: '全端联调测试', desc: 'PC 管理端、小程序端、后端 API 全链路联调，修复接口兼容性、数据格式不一致等问题', color: '#667eea', icon: I.Medal },
+    { date: '2026年9月初', title: '性能优化', desc: '图片懒加载、列表虚拟滚动、API 请求防抖、本地缓存策略、分包加载优化', color: '#764ba2', icon: I.Flag },
+    { date: '2026年9月中', title: 'UI 细节打磨', desc: '统一配色方案（紫蓝渐变主题）、动画过渡效果、空状态设计、错误提示优化、深色模式适配', color: '#4ECDC4', icon: I.DataLine },
+    { date: '2026年9月中', title: '安全性加固', desc: 'XSS 防护、SQL 注入防护、接口限流、JWT 过期处理、文件上传类型校验、敏感数据脱敏', color: '#FF6B6B', icon: I.Trophy },
+    { date: '2026年9月下', title: '部署与上线', desc: '后端部署至云服务器（Nginx 反向代理 + PM2 进程管理），数据库迁移，小程序提审上线', color: '#F59E0B', icon: I.Medal },
+    { date: '2026年9月下', title: '项目完成', desc: '全部功能上线运行，PC 端 + 小程序端 + 后端 API 三端完整交付，持续迭代优化中', color: '#667eea', icon: I.Flag },
+];
+
+const dataCards = reactive([
+    { icon: I.Document, label: '文章总数', value: 0, color: '#667eea', bg: '#eef2ff' },
+    { icon: I.FolderOpened, label: '分类数量', value: 0, color: '#4ECDC4', bg: '#e8faf8' },
+    { icon: I.PriceTag, label: '标签数量', value: 0, color: '#FF6B6B', bg: '#fff0f0' },
+    { icon: I.ChatDotRound, label: '评论总数', value: 0, color: '#F59E0B', bg: '#fffbeb' },
+]);
+
+const contacts = [
+    { icon: I.Message, label: '电子邮箱', value: 'svip888ws@foxmail.com', color: '#667eea', bg: '#eef2ff' },
+    { icon: I.Link, label: 'QQ', value: '2517441744', color: '#333', bg: '#f5f5f5' },
+    { icon: I.ChatLineRound, label: '微信', value: '13080983262', color: '#4ECDC4', bg: '#e8faf8' },
+];
+
+/* ========== 事件处理 ========== */
 const onMouseMove = (e) => {
-    cursorX.value = e.clientX;
-    cursorY.value = e.clientY;
-    mouseX.value = e.clientX;
-    mouseY.value = e.clientY;
+    cursorX.value = mouseX.value = e.clientX;
+    cursorY.value = mouseY.value = e.clientY;
 };
 
-// 3D 倾斜
 const onTiltMove = (e) => {
     const card = e.currentTarget;
     const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const rotateX = ((y - centerY) / centerY) * -6;
-    const rotateY = ((x - centerX) / centerX) * 6;
-    card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-2px)`;
-    // 高光跟随
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const rx = ((y - rect.height / 2) / (rect.height / 2)) * -6;
+    const ry = ((x - rect.width / 2) / (rect.width / 2)) * 6;
+    card.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-2px)`;
     const shine = card.querySelector('.card-shine');
-    if (shine) {
-        shine.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255,255,255,0.15) 0%, transparent 60%)`;
-    }
+    if (shine) shine.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255,255,255,0.15) 0%, transparent 60%)`;
 };
 
 const onTiltLeave = (e) => {
     const card = e.currentTarget;
-    card.style.transform = 'perspective(800px) rotateX(0) rotateY(0) translateY(0)';
+    card.style.transform = '';
     const shine = card.querySelector('.card-shine');
-    if (shine) shine.style.background = 'transparent';
+    if (shine) shine.style.background = '';
 };
 
-const heroStats = computed(() => [
-    { icon: Document, label: '篇文章', value: articleCount.value, color: '#667eea', percent: 80 },
-    { icon: PriceTag, label: '个标签', value: tagCount.value, color: '#4ECDC4', percent: 65 },
-    { icon: FolderOpened, label: '个分类', value: categoryCount.value, color: '#FF6B6B', percent: 50 },
-    { icon: ChatDotRound, label: '条评论', value: commentCount.value, color: '#FCD34D', percent: 70 },
-]);
-
-const particleStyle = (i) => ({
-    width: (Math.random() * 4 + 2) + 'px',
-    height: (Math.random() * 4 + 2) + 'px',
-    left: Math.random() * 100 + '%',
-    top: Math.random() * 100 + '%',
-    animationDelay: Math.random() * 8 + 's',
-    animationDuration: Math.random() * 15 + 10 + 's',
-    opacity: Math.random() * 0.4 + 0.1
-});
-
-const socials = [
-    { icon: Message, label: '邮件' },
-    { icon: Link, label: 'GitHub' },
-    { icon: ChatLineRound, label: '微信' },
-];
-
-const highlights = [
-    { icon: Promotion, title: '全栈开发', desc: 'Vue3 + Express + MySQL', color: '#667eea' },
-    { icon: EditPen, title: '技术写作', desc: '记录学习，分享经验', color: '#4ECDC4' },
-    { icon: Brush, title: 'UI 设计', desc: '注重用户体验与视觉美感', color: '#FF6B6B' },
-    { icon: Sunrise, title: '持续学习', desc: '保持好奇心，拥抱新技术', color: '#F59E0B' },
-];
-
-const techStack = [
-    { icon: Monitor, name: 'Vue3', desc: '前端框架', level: 90, color: '#4FC08D', bg: '#f0fdf4' },
-    { icon: Connection, name: 'Express', desc: '后端框架', level: 85, color: '#333', bg: '#f5f5f5' },
-    { icon: DataLine, name: 'MySQL', desc: '关系型数据库', level: 80, color: '#4479A1', bg: '#eff6ff' },
-    { icon: Cpu, name: 'Vite', desc: '构建工具', level: 88, color: '#646CFF', bg: '#f5f3ff' },
-    { icon: Aim, name: 'Element Plus', desc: 'UI 组件库', level: 92, color: '#409EFF', bg: '#ecf5ff' },
-    { icon: Coin, name: 'JWT', desc: '身份认证', level: 78, color: '#F59E0B', bg: '#fffbeb' },
-    { icon: Link, name: 'RESTful API', desc: '接口设计', level: 85, color: '#8B5CF6', bg: '#f5f3ff' },
-    { icon: Brush, name: 'CSS3', desc: '样式与动画', level: 88, color: '#E44D26', bg: '#fff7ed' },
-];
-
-const timeline = [
-    { date: '2026年6月', title: '博客项目启动', desc: '确定技术方案，搭建项目架构，开始前后端开发', color: '#667eea', icon: Flag },
-    { date: '2026年6月', title: '核心功能完成', desc: '文章管理、分类标签、评论系统、用户管理等功能上线', color: '#4ECDC4', icon: Trophy },
-    { date: '2026年6月', title: '前台页面优化', desc: '首页改版、轮播图、搜索功能、留言墙等功能上线', color: '#FF6B6B', icon: Medal },
-    { date: '2026年6月', title: '仪表盘上线', desc: '后台管理加入数据统计、ECharts 图表等功能', color: '#F59E0B', icon: DataLine },
-];
-
-const dataCards = reactive([
-    { icon: Document, label: '文章总数', value: 0, color: '#667eea', bg: '#eef2ff' },
-    { icon: FolderOpened, label: '分类数量', value: 0, color: '#4ECDC4', bg: '#e8faf8' },
-    { icon: PriceTag, label: '标签数量', value: 0, color: '#FF6B6B', bg: '#fff0f0' },
-    { icon: ChatDotRound, label: '评论总数', value: 0, color: '#F59E0B', bg: '#fffbeb' },
-]);
-
-const contacts = [
-    { icon: Message, label: '电子邮箱', value: 'admin@example.com', color: '#667eea', bg: '#eef2ff' },
-    { icon: Link, label: 'GitHub', value: 'github.com', color: '#333', bg: '#f5f5f5' },
-    { icon: ChatLineRound, label: '微信', value: '暂未公开', color: '#4ECDC4', bg: '#e8faf8' },
-];
-
-const animateNumber = (targetRef, targetValue, duration = 1500) => {
-    const startTime = Date.now();
+/* ========== 数字动画 ========== */
+const animateNumber = (refVal, target, duration = 1500) => {
+    const t0 = Date.now();
     const step = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        targetRef.value = Math.floor(eased * targetValue);
-        if (progress < 1) requestAnimationFrame(step);
-        else targetRef.value = targetValue;
+        const p = Math.min((Date.now() - t0) / duration, 1);
+        refVal.value = Math.floor((1 - Math.pow(1 - p, 3)) * target);
+        p < 1 ? requestAnimationFrame(step) : (refVal.value = target);
     };
     requestAnimationFrame(step);
 };
 
+/* ========== 数据请求 ========== */
 const fetchData = async () => {
     try {
-        const [adminRes, articleRes, tagRes, categoryRes, commentRes] = await Promise.all([
+        const [a, ar, t, c, cm] = await Promise.all([
             getAdminInfo(),
             request.get('/article', { params: { pageSize: 1 } }),
             request.get('/tag'),
             request.get('/category'),
-            request.get('/comment/latest', { params: { limit: 100 } })
+            request.get('/comment/latest', { params: { limit: 100 } }),
         ]);
-        admin.value = adminRes.data;
-        articleCount.value = articleRes.data.total || 0;
-        tagCount.value = tagRes.data.length || 0;
-        categoryCount.value = categoryRes.data.length || 0;
-        commentCount.value = commentRes.data.length || 0;
-        dataCards[0].value = articleCount.value;
-        dataCards[1].value = categoryCount.value;
-        dataCards[2].value = tagCount.value;
-        dataCards[3].value = commentCount.value;
-        animateNumber(articleCount, articleCount.value);
-        animateNumber(tagCount, tagCount.value);
-        animateNumber(categoryCount, categoryCount.value);
-        animateNumber(commentCount, commentCount.value);
-    } catch (error) { console.error('获取数据失败:', error); }
+        admin.value = a.data;
+        const ac = ar.data.total || 0, tc = t.data.length || 0, cc = c.data.length || 0, cmc = cm.data.length || 0;
+        Object.assign(dataCards[0], { value: ac });
+        Object.assign(dataCards[1], { value: cc });
+        Object.assign(dataCards[2], { value: tc });
+        Object.assign(dataCards[3], { value: cmc });
+        animateNumber(articleCount, ac);
+        animateNumber(tagCount, tc);
+        animateNumber(categoryCount, cc);
+        animateNumber(commentCount, cmc);
+    } catch (e) { console.error('获取数据失败:', e); }
 };
 
+/* ========== 滚动揭示 ========== */
 let observer = null;
+
+const revealSection = (el) => {
+    el.querySelectorAll('.reveal').forEach((child, i) => {
+        setTimeout(() => child.classList.add('revealed'), i * 100);
+    });
+};
+
 const setupObserver = () => {
-    const targets = [
-        { ref: aboutRef, visible: aboutVisible },
-        { ref: techRef, visible: techVisible },
-        { ref: timelineRef, visible: timelineVisible },
-        { ref: dataRef, visible: dataVisible },
-        { ref: contactRef, visible: contactVisible },
-    ];
     observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            const target = targets.find(t => t.ref.value === entry.target);
-            if (target && entry.isIntersecting) target.visible.value = true;
+        entries.forEach((e) => {
+            if (e.isIntersecting) { revealSection(e.target); observer.unobserve(e.target); }
         });
     }, { threshold: 0.12 });
-    targets.forEach(t => { if (t.ref.value) observer.observe(t.ref.value); });
+    [aboutRef, techRef, timelineRef, dataRef, contactRef].forEach((r) => r.value && observer.observe(r.value));
 };
 
-onMounted(() => {
-    fetchData();
-    setupObserver();
-    startTyping();
-});
-
-onUnmounted(() => {
-    if (observer) observer.disconnect();
-    if (typeTimer) clearTimeout(typeTimer);
-});
+onMounted(() => { fetchData(); setupObserver(); startTyping(); });
+onUnmounted(() => { observer?.disconnect(); clearTimeout(typeTimer); });
 </script>
 
 <style scoped>
+/* ============================================================
+   Variables
+   ============================================================ */
 .about-page {
+    --primary: #667eea;
+    --purple: #764ba2;
+    --teal: #4ECDC4;
+    --red: #FF6B6B;
+    --amber: #F59E0B;
+    --pink: #F472B6;
+    --violet: #A78BFA;
+    --heading: #1a1a2e;
+    --text: #555;
+    --muted: #999;
+    --card: #fff;
+    --border: rgba(0, 0, 0, 0.04);
+    --max-w: 1100px;
+    --r: 16px;
+    --r-sm: 14px;
+    --r-lg: 20px;
+
     background: #f5f6f8;
-    cursor: none;
+    cursor: auto;
     overflow-x: hidden;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .about-page {
-        cursor: auto;
+        cursor: none;
     }
 }
 
-/* 自定义光标 */
+.muted {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 5px 0;
+}
+
+/* ============================================================
+   Cursor Glow
+   ============================================================ */
 .cursor-glow {
     position: fixed;
     width: 300px;
@@ -501,38 +510,22 @@ onUnmounted(() => {
     }
 }
 
-/* ==================== HERO ==================== */
-.hero-section {
+/* ============================================================
+   Hero Section
+   ============================================================ */
+.hero {
     position: relative;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background: #08081a;
+    background: #cac2d6;
 }
 
 .hero-bg {
     position: absolute;
     inset: 0;
-}
-
-.hero-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
-}
-
-/* 噪点纹理 */
-.hero-noise {
-    position: absolute;
-    inset: 0;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 128px 128px;
 }
 
 .hero-gradient {
@@ -544,6 +537,24 @@ onUnmounted(() => {
         radial-gradient(ellipse at 50% 80%, rgba(244, 114, 182, 0.12) 0%, transparent 50%);
 }
 
+.hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+}
+
+.hero-noise {
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
+}
+
+/* Orbs */
 .hero-orbs {
     position: absolute;
     inset: 0;
@@ -553,46 +564,49 @@ onUnmounted(() => {
     position: absolute;
     border-radius: 50%;
     filter: blur(80px);
+    animation: orbFloat 20s ease-in-out infinite;
 }
 
 .h-orb-1 {
     width: 300px;
     height: 300px;
-    background: #667eea;
+    background: var(--primary);
     opacity: 0.2;
-    top: -100px;
-    left: -80px;
-    animation: orbFloat 12s ease-in-out infinite;
+    top: -150px;
+    left: -130px;
 }
 
 .h-orb-2 {
-    width: 250px;
-    height: 250px;
-    background: #A78BFA;
+    width: 450px;
+    height: 450px;
+    background: var(--violet);
     opacity: 0.15;
     bottom: -80px;
     right: -60px;
-    animation: orbFloat 15s ease-in-out infinite reverse;
+    animation-duration: 15s;
+    animation-direction: reverse;
 }
 
 .h-orb-3 {
     width: 180px;
     height: 180px;
-    background: #F472B6;
+    background: var(--pink);
     opacity: 0.12;
-    top: 30%;
+    top: 20%;
     right: 10%;
-    animation: orbFloat 10s ease-in-out infinite 3s;
+    animation-duration: 10s;
+    animation-delay: 3s;
 }
 
 .h-orb-4 {
     width: 200px;
     height: 200px;
-    background: #4ECDC4;
+    background: var(--teal);
     opacity: 0.1;
     bottom: 20%;
     left: 5%;
-    animation: orbFloat 14s ease-in-out infinite 5s;
+    animation-duration: 14s;
+    animation-delay: 5s;
 }
 
 @keyframes orbFloat {
@@ -615,7 +629,44 @@ onUnmounted(() => {
     }
 }
 
-/* 浮动几何体 */
+/* Particles */
+.hero-particles .particle {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    animation: particleDrift linear infinite;
+}
+
+@keyframes particleDrift {
+
+    0%,
+    100% {
+        transform: translateY(0) translateX(0);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    25% {
+        transform: translateY(-40px) translateX(25px);
+    }
+
+    50% {
+        transform: translateY(-20px) translateX(-15px);
+    }
+
+    75% {
+        transform: translateY(-60px) translateX(20px);
+    }
+
+    90% {
+        opacity: 1;
+    }
+}
+
+/* Floating Shapes */
 .floating-shapes {
     position: absolute;
     inset: 0;
@@ -635,7 +686,6 @@ onUnmounted(() => {
     top: 15%;
     left: 10%;
     animation-duration: 20s;
-    transform-origin: center;
 }
 
 .shape-2 {
@@ -698,42 +748,7 @@ onUnmounted(() => {
     }
 }
 
-.hero-particles .particle {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 50%;
-    animation: particleDrift linear infinite;
-}
-
-@keyframes particleDrift {
-
-    0%,
-    100% {
-        transform: translateY(0) translateX(0);
-        opacity: 0;
-    }
-
-    10% {
-        opacity: 1;
-    }
-
-    90% {
-        opacity: 1;
-    }
-
-    25% {
-        transform: translateY(-40px) translateX(25px);
-    }
-
-    50% {
-        transform: translateY(-20px) translateX(-15px);
-    }
-
-    75% {
-        transform: translateY(-60px) translateX(20px);
-    }
-}
-
+/* Hero Content */
 .hero-content {
     position: relative;
     z-index: 2;
@@ -756,11 +771,7 @@ onUnmounted(() => {
     border-radius: 30px;
     letter-spacing: 4px;
     margin-bottom: 28px;
-    animation: fadeInDown 0.8s ease both;
-}
-
-.float-badge {
-    animation: fadeInDown 0.8s ease both, badgeFloat 4s ease-in-out infinite 1s;
+    animation: fadeInDown 0.8s ease both, badgeFloat 4s ease-in-out 1s infinite;
 }
 
 @keyframes badgeFloat {
@@ -776,7 +787,7 @@ onUnmounted(() => {
 }
 
 .hero-title {
-    font-size: 36px;
+    font-size: clamp(32px, 6vw, 56px);
     font-weight: 900;
     color: #fff;
     margin: 0 0 16px;
@@ -784,50 +795,35 @@ onUnmounted(() => {
     animation: fadeInUp 0.8s ease 0.15s both;
 }
 
-@media (min-width: 768px) {
-    .hero-title {
-        font-size: 56px;
-    }
-}
-
-.title-highlight {
-    background: linear-gradient(135deg, #667eea, #A78BFA, #F472B6, #667eea);
+.gradient-text {
+    background: linear-gradient(135deg, var(--primary), var(--violet), var(--pink), var(--primary));
     background-size: 300% 300%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: shimmerGradient 4s ease infinite;
+    animation: shimmer 4s ease infinite;
 }
 
-@keyframes shimmerGradient {
-    0% {
+@keyframes shimmer {
+
+    0%,
+    100% {
         background-position: 0% 50%;
     }
 
     50% {
         background-position: 100% 50%;
     }
-
-    100% {
-        background-position: 0% 50%;
-    }
 }
 
 .hero-subtitle {
-    font-size: 15px;
+    font-size: clamp(14px, 2vw, 17px);
     color: rgba(255, 255, 255, 0.45);
     margin: 0 auto 36px;
     max-width: 520px;
     line-height: 1.7;
     min-height: 2.8em;
     animation: fadeInUp 0.8s ease 0.3s both;
-}
-
-@media (min-width: 768px) {
-    .hero-subtitle {
-        font-size: 17px;
-        margin-bottom: 44px;
-    }
 }
 
 .typing-cursor {
@@ -848,12 +844,13 @@ onUnmounted(() => {
     }
 }
 
+/* Hero Stats */
 .hero-stats {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     max-width: 420px;
-    margin: 0 auto 50px;
+    margin: 0 auto 20px;
     animation: fadeInUp 0.8s ease 0.45s both;
 }
 
@@ -874,7 +871,7 @@ onUnmounted(() => {
     background: rgba(255, 255, 255, 0.06);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
+    border-radius: var(--r);
     transition: all 0.3s;
 }
 
@@ -889,17 +886,17 @@ onUnmounted(() => {
     height: 36px;
 }
 
-.stat-ring-svg {
+.stat-ring svg {
     width: 100%;
     height: 100%;
     transform: rotate(-90deg);
 }
 
-.stat-ring-progress {
+.ring-anim {
     transition: stroke-dasharray 1s ease;
 }
 
-.stat-ring-icon {
+.ring-icon {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -919,6 +916,7 @@ onUnmounted(() => {
     color: rgba(255, 255, 255, 0.4);
 }
 
+/* Scroll Hint */
 .scroll-hint {
     position: absolute;
     bottom: 30px;
@@ -1002,7 +1000,9 @@ onUnmounted(() => {
     }
 }
 
-/* ==================== 通用区块 ==================== */
+/* ============================================================
+   Section Common
+   ============================================================ */
 .section {
     padding: 60px 0;
 }
@@ -1013,61 +1013,39 @@ onUnmounted(() => {
     }
 }
 
-.section-inner {
-    max-width: 1100px;
+.container {
+    max-width: var(--max-w);
     margin: 0 auto;
     padding: 0 16px;
 }
 
 @media (min-width: 768px) {
-    .section-inner {
+    .container {
         padding: 0 24px;
     }
 }
 
-.section-header {
+.section-head {
     text-align: center;
     margin-bottom: 36px;
 }
 
 @media (min-width: 768px) {
-    .section-header {
+    .section-head {
         margin-bottom: 50px;
     }
-}
-
-/* 滚动揭示动画 */
-.reveal-up {
-    opacity: 0;
-    transform: translateY(40px);
-    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.section:nth-child(n) .reveal-up {
-    opacity: 1;
-    transform: none;
 }
 
 .section-tag {
     display: inline-block;
     padding: 4px 16px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #8d9ff1, var(--purple));
     color: #fff;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 800;
     letter-spacing: 3px;
     border-radius: 20px;
     margin-bottom: 14px;
-}
-
-@media (min-width: 768px) {
-    .section-tag {
-        font-size: 11px;
-    }
-}
-
-/* 发光标签 */
-.glow-tag {
     box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
     animation: tagGlow 3s ease-in-out infinite;
 }
@@ -1085,28 +1063,39 @@ onUnmounted(() => {
 }
 
 .section-title {
-    font-size: 28px;
+    font-size: clamp(26px, 4vw, 34px);
     font-weight: 900;
-    color: #1a1a2e;
+    color: var(--heading);
     margin: 0 0 8px;
-}
-
-@media (min-width: 768px) {
-    .section-title {
-        font-size: 34px;
-    }
 }
 
 .section-desc {
     font-size: 14px;
-    color: #999;
+    color: var(--muted);
     margin: 0;
 }
 
-/* ==================== 3D 倾斜卡片 + 高光 ==================== */
+/* ============================================================
+   Reveal & Tilt
+   ============================================================ */
+.reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease, box-shadow 0.3s ease;
+}
+
+.section-head.reveal {
+    transform: translateY(40px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 .tilt-card {
     position: relative;
-    transition: transform 0.2s ease, box-shadow 0.3s ease;
     will-change: transform;
     overflow: hidden;
 }
@@ -1120,9 +1109,33 @@ onUnmounted(() => {
     transition: background 0.15s;
 }
 
-/* ==================== 关于博主 ==================== */
-.section-about {
-    background: #fff;
+/* ============================================================
+   Icon Box (shared)
+   ============================================================ */
+.icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--r-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+}
+
+@media (min-width: 768px) {
+    .icon-box {
+        width: 56px;
+        height: 56px;
+        border-radius: var(--r);
+        margin-bottom: 16px;
+    }
+}
+
+/* ============================================================
+   About Section
+   ============================================================ */
+.sec-about {
+    background: #f0f6ef;
 }
 
 .about-grid {
@@ -1139,29 +1152,21 @@ onUnmounted(() => {
     }
 }
 
-.about-card-left {
+.about-sidebar {
     text-align: center;
     padding: 32px 20px;
-    background: #fafbff;
-    border-radius: 20px;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 0.8s ease, transform 0.8s ease;
-}
-
-.about-card-left.show {
-    opacity: 1;
-    transform: translateY(0);
+    background: #e2e7f7;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
 }
 
 @media (min-width: 768px) {
-    .about-card-left {
+    .about-sidebar {
         padding: 36px 24px;
     }
 }
 
-.avatar-wrapper {
+.avatar-wrap {
     position: relative;
     display: inline-block;
     margin-bottom: 16px;
@@ -1171,7 +1176,7 @@ onUnmounted(() => {
     display: inline-block;
     padding: 5px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, var(--primary), var(--purple));
     position: relative;
     overflow: hidden;
 }
@@ -1180,107 +1185,67 @@ onUnmounted(() => {
     position: absolute;
     inset: -2px;
     border-radius: 50%;
-    background: conic-gradient(from 0deg, #667eea, #F472B6, #4ECDC4, #667eea);
-    animation: ringRotate 3s linear infinite;
+    background: conic-gradient(from 0deg, var(--primary), var(--pink), var(--teal), var(--primary));
+    animation: spin 3s linear infinite;
     opacity: 0.6;
 }
 
-@keyframes ringRotate {
+@keyframes spin {
     to {
         transform: rotate(360deg);
     }
 }
 
-.avatar-glow {
-    position: absolute;
-    inset: -8px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    opacity: 0.15;
-    filter: blur(16px);
-    animation: glowPulse 3s ease-in-out infinite;
-}
-
-@keyframes glowPulse {
-
-    0%,
-    100% {
-        opacity: 0.15;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.25;
-        transform: scale(1.1);
-    }
-}
-
 .about-avatar {
-    background: #fff;
-    color: #667eea;
+    background: #ff8484;
+    color: var(--primary);
     font-size: 42px;
     font-weight: 900;
     position: relative;
     z-index: 2;
 }
 
-.about-name {
+.about-sidebar h3 {
     font-size: 20px;
     font-weight: 800;
-    color: #1a1a2e;
+    color: var(--heading);
     margin: 0 0 4px;
 }
 
-.about-role {
-    font-size: 13px;
-    color: #999;
-    margin: 0 0 18px;
-}
-
-.about-social {
+.socials {
     display: flex;
     justify-content: center;
     gap: 10px;
+    margin-top: 18px;
 }
 
-.social-link {
+.social-btn {
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: #fff;
+    background: rgba(165, 156, 209, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #666;
     cursor: pointer;
-    transition: all 0.3s;
     border: 1px solid #f0f0f0;
     text-decoration: none;
+    transition: all 0.3s;
 }
 
-.social-link:hover {
+.social-btn:hover {
     transform: translateY(-3px) scale(1.05);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-    color: #667eea;
-    border-color: #667eea;
-}
-
-.about-card-right {
-    opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 0.8s ease 0.2s, transform 0.8s ease 0.2s;
-}
-
-.about-card-right.show {
-    opacity: 1;
-    transform: translateY(0);
+    color: var(--primary);
+    border-color: var(--primary);
 }
 
 .about-text {
     padding: 24px;
     background: #fafbff;
-    border-radius: 20px;
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
     margin-bottom: 18px;
 }
 
@@ -1292,7 +1257,7 @@ onUnmounted(() => {
 
 .about-text p {
     font-size: 14px;
-    color: #555;
+    color: var(--text);
     line-height: 1.8;
     margin: 0 0 10px;
 }
@@ -1302,7 +1267,7 @@ onUnmounted(() => {
 }
 
 .about-text strong {
-    color: #1a1a2e;
+    color: var(--heading);
 }
 
 .highlight-grid {
@@ -1324,18 +1289,15 @@ onUnmounted(() => {
     gap: 12px;
     padding: 14px 16px;
     background: #fafbff;
-    border-radius: 14px;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    transition: transform 0.2s ease, box-shadow 0.3s ease;
-    opacity: 0;
-    animation: fadeInUp 0.6s ease forwards;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
 }
 
 .highlight-card:hover {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
 }
 
-.hl-icon-glow {
+.hl-glow {
     position: absolute;
     width: 40px;
     height: 40px;
@@ -1353,15 +1315,17 @@ onUnmounted(() => {
 .hl-title {
     font-size: 13px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--heading);
 }
 
 .hl-desc {
     font-size: 11px;
-    color: #999;
+    color: var(--muted);
 }
 
-/* ==================== 技术栈 ==================== */
+/* ============================================================
+   Tech Section
+   ============================================================ */
 .tech-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1383,18 +1347,11 @@ onUnmounted(() => {
 }
 
 .tech-card {
-    background: #fff;
-    border-radius: 16px;
+    background: var(--card);
+    border-radius: var(--r);
     padding: 20px 16px;
     text-align: center;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    transition: opacity 0.6s ease, transform 0.6s ease, box-shadow 0.3s ease;
-    opacity: 0;
-}
-
-.tech-card.show {
-    opacity: 1;
-    transform: translateY(0) !important;
+    border: 1px solid var(--border);
 }
 
 @media (min-width: 768px) {
@@ -1407,43 +1364,22 @@ onUnmounted(() => {
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
 }
 
-.tech-icon-box {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 12px;
+.tech-card .icon-box {
     transition: transform 0.3s;
 }
 
-@media (min-width: 768px) {
-    .tech-icon-box {
-        width: 56px;
-        height: 56px;
-        border-radius: 16px;
-    }
-}
-
-.tech-card:hover .tech-icon-box {
+.tech-card:hover .icon-box {
     transform: scale(1.1) rotate(-5deg);
 }
 
-.tech-name {
+.tech-card h4 {
     font-size: 14px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--heading);
     margin: 0 0 4px;
 }
 
-.tech-desc {
-    font-size: 11px;
-    color: #999;
-    margin: 0 0 12px;
-}
-
-.tech-bar {
+.bar {
     height: 4px;
     background: #f0f0f0;
     border-radius: 2px;
@@ -1451,7 +1387,7 @@ onUnmounted(() => {
     margin-bottom: 6px;
 }
 
-.tech-bar-fill {
+.bar-fill {
     height: 100%;
     border-radius: 2px;
     transition: width 1.5s ease;
@@ -1463,8 +1399,10 @@ onUnmounted(() => {
     color: #bbb;
 }
 
-/* ==================== 发展历程 ==================== */
-.section-timeline {
+/* ============================================================
+   Timeline Section
+   ============================================================ */
+.sec-timeline {
     background: #fff;
 }
 
@@ -1473,7 +1411,7 @@ onUnmounted(() => {
     padding: 20px 0;
 }
 
-.timeline-track {
+.tl-track {
     position: absolute;
     left: 24px;
     top: 0;
@@ -1484,19 +1422,19 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-    .timeline-track {
+    .tl-track {
         left: 50%;
         transform: translateX(-50%);
     }
 }
 
-.timeline-track-glow {
+.tl-track-glow {
     position: absolute;
     top: -100%;
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(180deg, transparent, #667eea, #4ECDC4, #FF6B6B, transparent);
+    background: linear-gradient(180deg, transparent, var(--primary), var(--teal), var(--red), transparent);
     animation: trackGlow 4s ease-in-out infinite;
 }
 
@@ -1510,34 +1448,26 @@ onUnmounted(() => {
     }
 }
 
-.timeline-item {
+.tl-item {
     position: relative;
     padding-left: 56px;
     padding-bottom: 32px;
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-.timeline-item.show {
-    opacity: 1;
-    transform: translateY(0);
 }
 
 @media (min-width: 768px) {
-    .timeline-item {
+    .tl-item {
         width: 50%;
         padding-bottom: 40px;
     }
 
-    .timeline-item.tl-left {
+    .tl-left {
         left: 0;
         text-align: right;
         padding-left: 0;
         padding-right: 56px;
     }
 
-    .timeline-item.tl-right {
+    .tl-right {
         left: 50%;
         text-align: left;
         padding-left: 56px;
@@ -1548,6 +1478,7 @@ onUnmounted(() => {
 .tl-dot {
     position: absolute;
     top: 4px;
+    left: 8px;
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -1559,22 +1490,18 @@ onUnmounted(() => {
     z-index: 2;
 }
 
-.timeline-item .tl-dot {
-    left: 8px;
-}
-
 @media (min-width: 768px) {
-    .timeline-item.tl-left .tl-dot {
+    .tl-left .tl-dot {
         left: auto;
         right: -16px;
     }
 
-    .timeline-item.tl-right .tl-dot {
+    .tl-right .tl-dot {
         left: -16px;
     }
 }
 
-.pulse-dot::after {
+.tl-dot::after {
     content: '';
     position: absolute;
     inset: -4px;
@@ -1598,9 +1525,8 @@ onUnmounted(() => {
 .tl-card {
     padding: 18px 20px;
     background: #fafbff;
-    border-radius: 14px;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
 }
 
 .tl-card:hover {
@@ -1612,21 +1538,23 @@ onUnmounted(() => {
     font-weight: 700;
 }
 
-.tl-title {
+.tl-card h4 {
     font-size: 15px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--heading);
     margin: 6px 0;
 }
 
-.tl-desc {
+.tl-card p {
     font-size: 13px;
     color: #666;
     margin: 0;
     line-height: 1.6;
 }
 
-/* ==================== 博客数据 ==================== */
+/* ============================================================
+   Data Section
+   ============================================================ */
 .data-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1643,19 +1571,11 @@ onUnmounted(() => {
 .data-card {
     text-align: center;
     padding: 28px 16px;
-    background: #fff;
+    background: var(--card);
     border-radius: 18px;
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--border);
     position: relative;
     overflow: hidden;
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.6s ease, transform 0.6s ease, box-shadow 0.4s;
-}
-
-.data-card.show {
-    opacity: 1;
-    transform: translateY(0);
 }
 
 @media (min-width: 768px) {
@@ -1664,6 +1584,7 @@ onUnmounted(() => {
     }
 }
 
+/* Accent top bar */
 .data-card::before {
     content: '';
     position: absolute;
@@ -1671,30 +1592,10 @@ onUnmounted(() => {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-light));
+    background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent), white 30%));
 }
 
-.data-card:nth-child(1) {
-    --accent: #667eea;
-    --accent-light: #8ba0f5;
-}
-
-.data-card:nth-child(2) {
-    --accent: #4ECDC4;
-    --accent-light: #7EDDD6;
-}
-
-.data-card:nth-child(3) {
-    --accent: #FF6B6B;
-    --accent-light: #FF9F9F;
-}
-
-.data-card:nth-child(4) {
-    --accent: #F59E0B;
-    --accent-light: #FCD34D;
-}
-
-/* 流光边框 */
+/* Hover glow border */
 .data-card::after {
     content: '';
     position: absolute;
@@ -1716,16 +1617,14 @@ onUnmounted(() => {
 }
 
 @keyframes borderFlow {
-    0% {
+
+    0%,
+    100% {
         background-position: 0% 50%;
     }
 
     50% {
         background-position: 100% 50%;
-    }
-
-    100% {
-        background-position: 0% 50%;
     }
 }
 
@@ -1734,49 +1633,26 @@ onUnmounted(() => {
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
 }
 
-.data-icon-box {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 14px;
-}
-
-@media (min-width: 768px) {
-    .data-icon-box {
-        width: 56px;
-        height: 56px;
-        border-radius: 16px;
-        margin-bottom: 16px;
-    }
-}
-
 .data-num {
-    font-size: 36px;
+    font-size: clamp(32px, 5vw, 42px);
     font-weight: 900;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, var(--primary), var(--purple));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     line-height: 1.2;
 }
 
-@media (min-width: 768px) {
-    .data-num {
-        font-size: 42px;
-    }
-}
-
 .data-label {
     font-size: 13px;
-    color: #999;
+    color: var(--muted);
     margin-top: 4px;
 }
 
-/* ==================== 联系方式 ==================== */
-.section-contact {
+/* ============================================================
+   Contact Section
+   ============================================================ */
+.sec-contact {
     background: #fff;
 }
 
@@ -1798,15 +1674,7 @@ onUnmounted(() => {
     padding: 28px 16px;
     background: #fafbff;
     border-radius: 18px;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.6s ease, transform 0.6s ease, box-shadow 0.3s;
-}
-
-.contact-card.show {
-    opacity: 1;
-    transform: translateY(0);
+    border: 1px solid var(--border);
 }
 
 @media (min-width: 768px) {
@@ -1819,30 +1687,22 @@ onUnmounted(() => {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
-.contact-icon-box {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 14px;
-}
-
-.contact-label {
+.contact-card h4 {
     font-size: 14px;
     font-weight: 700;
-    color: #1a1a2e;
+    color: var(--heading);
     margin: 0 0 6px;
 }
 
-.contact-value {
+.contact-card p {
     font-size: 13px;
     color: #666;
     margin: 0;
 }
 
-/* ==================== 全局滚动条美化 ==================== */
+/* ============================================================
+   Scrollbar
+   ============================================================ */
 ::-webkit-scrollbar {
     width: 6px;
 }

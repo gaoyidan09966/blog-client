@@ -1,6 +1,7 @@
 <template>
     <div class="banner-wrapper" v-if="banners.length > 0">
-        <div class="banner-track" ref="trackRef" @mouseenter="pauseAuto" @mouseleave="resumeAuto">
+        <div class="banner-track" ref="trackRef" @mouseenter="pauseAuto" @mouseleave="resumeAuto"
+            @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd">
 
             <!-- 轮播项 -->
             <div v-for="(item, index) in banners" :key="item.id" class="banner-slide"
@@ -8,12 +9,13 @@
 
                 <!-- 图片类型 -->
                 <div class="slide-media" v-if="item.media_type === 'image'">
-                    <img :src="item.media_url" :alt="item.title" class="slide-img" />
+                    <img :src="item.media_url" :alt="item.title" class="slide-img" draggable="false" />
                 </div>
 
                 <!-- 视频类型 -->
                 <div class="slide-media" v-else-if="item.media_type === 'video'">
-                    <video :src="item.media_url" class="slide-video" muted loop :ref="el => videoRefs[index] = el" />
+                    <video :src="item.media_url" class="slide-video" muted loop playsinline
+                        :ref="el => videoRefs[index] = el" />
                 </div>
 
                 <!-- 渐变遮罩 -->
@@ -33,7 +35,7 @@
                 <div class="slide-deco-line"></div>
             </div>
 
-            <!-- 左右箭头 -->
+            <!-- 左右箭头（桌面端） -->
             <button class="arrow arrow-left" @click="prev" v-show="banners.length > 1">
                 <el-icon>
                     <ArrowLeft />
@@ -53,7 +55,7 @@
                 </div>
             </div>
 
-            <!-- 滚动提示 -->
+            <!-- 滚动提示（桌面端） -->
             <div class="scroll-hint">
                 <div class="scroll-mouse">
                     <div class="scroll-dot"></div>
@@ -65,7 +67,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { getActiveBanners } from '../api/banner';
 
@@ -77,6 +79,16 @@ const videoRefs = ref({});
 
 let autoTimer = null;
 const INTERVAL = 5000;
+
+// 触摸状态
+const touchState = {
+    startX: 0,
+    startY: 0,
+    moveX: 0,
+    moveY: 0,
+    startTime: 0,
+    swiping: false,
+};
 
 const fetchBanners = async () => {
     try {
@@ -135,7 +147,60 @@ const playCurrentVideo = () => {
     });
 };
 
+// ==================== 触摸滑动 ====================
+const onTouchStart = (e) => {
+    const t = e.touches[0];
+    touchState.startX = t.clientX;
+    touchState.startY = t.clientY;
+    touchState.moveX = 0;
+    touchState.moveY = 0;
+    touchState.startTime = Date.now();
+    touchState.swiping = false;
+    stopAuto();
+};
+
+const onTouchMove = (e) => {
+    const t = e.touches[0];
+    touchState.moveX = t.clientX - touchState.startX;
+    touchState.moveY = t.clientY - touchState.startY;
+
+    // 判断是否为水平滑动（水平位移 > 垂直位移）
+    if (!touchState.swiping && Math.abs(touchState.moveX) > 10) {
+        if (Math.abs(touchState.moveX) > Math.abs(touchState.moveY)) {
+            touchState.swiping = true;
+        }
+    }
+
+    // 水平滑动时阻止默认滚动
+    if (touchState.swiping) {
+        e.preventDefault();
+    }
+};
+
+const onTouchEnd = () => {
+    const elapsed = Date.now() - touchState.startTime;
+    const distance = touchState.moveX;
+
+    if (touchState.swiping) {
+        // 快速轻扫或滑动超过 50px
+        const isQuickSwipe = elapsed < 300 && Math.abs(distance) > 30;
+        const isLongSwipe = Math.abs(distance) > 50;
+
+        if (isQuickSwipe || isLongSwipe) {
+            if (distance < 0) {
+                next();
+            } else {
+                prev();
+            }
+        }
+    }
+
+    resumeAuto();
+};
+
 const handleClick = (link) => {
+    // 如果刚发生过滑动，不触发点击
+    if (touchState.swiping) return;
     if (link.startsWith('http')) {
         window.open(link, '_blank');
     } else {
@@ -143,12 +208,20 @@ const handleClick = (link) => {
     }
 };
 
+// ==================== 键盘 ====================
+const onKeyDown = (e) => {
+    if (e.key === 'ArrowLeft') prev();
+    if (e.key === 'ArrowRight') next();
+};
+
 onMounted(() => {
     fetchBanners();
+    document.addEventListener('keydown', onKeyDown);
 });
 
 onUnmounted(() => {
     stopAuto();
+    document.removeEventListener('keydown', onKeyDown);
 });
 </script>
 
@@ -156,7 +229,6 @@ onUnmounted(() => {
 .banner-wrapper {
     position: relative;
     width: 100%;
-    margin-bottom: 0;
 }
 
 .banner-track {
@@ -166,9 +238,10 @@ onUnmounted(() => {
     min-height: 600px;
     overflow: hidden;
     background: #0a0a0f;
+    touch-action: pan-y;
 }
 
-/* 轮播项 */
+/* ==================== 轮播项 ==================== */
 .banner-slide {
     position: absolute;
     inset: 0;
@@ -202,7 +275,7 @@ onUnmounted(() => {
     object-fit: cover;
 }
 
-/* 渐变遮罩 — 全屏多层叠加 */
+/* 渐变遮罩 */
 .slide-overlay {
     position: absolute;
     inset: 0;
@@ -219,7 +292,7 @@ onUnmounted(() => {
             transparent 100%);
 }
 
-/* 文字内容 — 左下角大字排版 */
+/* ==================== 文字内容 ==================== */
 .slide-content {
     position: absolute;
     left: 80px;
@@ -273,9 +346,9 @@ onUnmounted(() => {
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
+    letter-spacing: 1px;
     transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     animation: fadeSlideUp 0.8s ease 0.7s both;
-    letter-spacing: 1px;
 }
 
 .slide-btn:hover {
@@ -292,13 +365,10 @@ onUnmounted(() => {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.3) 20%,
-            rgba(255, 255, 255, 0.6) 50%,
-            rgba(255, 255, 255, 0.3) 80%,
-            transparent 100%);
     z-index: 3;
+    background: linear-gradient(90deg,
+            transparent 0%, rgba(255, 255, 255, 0.3) 20%,
+            rgba(255, 255, 255, 0.6) 50%, rgba(255, 255, 255, 0.3) 80%, transparent 100%);
 }
 
 @keyframes fadeSlideUp {
@@ -313,7 +383,7 @@ onUnmounted(() => {
     }
 }
 
-/* 左右箭头 */
+/* ==================== 箭头 ==================== */
 .arrow {
     position: absolute;
     top: 50%;
@@ -353,7 +423,7 @@ onUnmounted(() => {
     right: 40px;
 }
 
-/* 指示器 — 左下角 */
+/* ==================== 指示器 ==================== */
 .indicators {
     position: absolute;
     bottom: 60px;
@@ -396,7 +466,7 @@ onUnmounted(() => {
     }
 }
 
-/* 滚动提示 */
+/* ==================== 滚动提示 ==================== */
 .scroll-hint {
     position: absolute;
     bottom: 30px;
@@ -457,7 +527,7 @@ onUnmounted(() => {
     }
 }
 
-/* ==================== 响应式 ==================== */
+/* ==================== 响应式 — 平板 ==================== */
 @media (max-width: 1024px) {
     .slide-content {
         left: 50px;
@@ -472,19 +542,159 @@ onUnmounted(() => {
     .slide-subtitle {
         font-size: 16px;
     }
+
+    .indicators {
+        right: 50px;
+    }
 }
 
+/* ==================== 响应式 — 手机 ==================== */
 @media (max-width: 768px) {
     .banner-track {
-        height: 70vh;
-        min-height: 400px;
+        height: 56vh;
+        min-height: 340px;
+    }
+
+    /* 遮罩加强：手机屏幕小，文字需要更强对比 */
+    .slide-overlay {
+        background:
+            linear-gradient(180deg,
+                rgba(0, 0, 0, 0.15) 0%,
+                rgba(0, 0, 0, 0.25) 40%,
+                rgba(0, 0, 0, 0.5) 70%,
+                rgba(0, 0, 0, 0.75) 100%);
+    }
+
+    /* 文字区域调整 */
+    .slide-content {
+        left: 20px;
+        right: 20px;
+        bottom: 70px;
+        max-width: none;
+    }
+
+    .slide-badge {
+        padding: 4px 14px;
+        font-size: 9px;
+        letter-spacing: 3px;
+        margin-bottom: 12px;
+    }
+
+    .slide-title {
+        font-size: 24px;
+        margin-bottom: 10px;
+        letter-spacing: 0;
+        text-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .slide-subtitle {
+        font-size: 13px;
+        margin-bottom: 18px;
+        line-height: 1.5;
+        /* 手机端最多两行 */
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .slide-btn {
+        padding: 10px 28px;
+        font-size: 13px;
+        border-radius: 40px;
+    }
+
+    /* 箭头：手机端常显，更小 */
+    .arrow {
+        opacity: 0.7;
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+        background: rgba(0, 0, 0, 0.25);
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .banner-track:hover .arrow {
+        opacity: 0.7;
+    }
+
+    .arrow:hover {
+        opacity: 1;
+    }
+
+    .arrow-left {
+        left: 12px;
+    }
+
+    .arrow-right {
+        right: 12px;
+    }
+
+    /* 指示器：居中底部 */
+    .indicators {
+        left: 50%;
+        right: auto;
+        bottom: 20px;
+        transform: translateX(-50%);
+        gap: 8px;
+    }
+
+    .indicator {
+        width: 20px;
+        height: 3px;
+    }
+
+    .indicator.active {
+        width: 32px;
+    }
+
+    /* 隐藏滚动提示 */
+    .scroll-hint {
+        display: none;
+    }
+}
+
+/* ==================== 响应式 — 小屏手机 ==================== */
+@media (max-width: 400px) {
+    .banner-track {
+        height: 50vh;
+        min-height: 300px;
     }
 
     .slide-content {
-        left: 24px;
-        right: 24px;
-        bottom: 80px;
-        max-width: none;
+        bottom: 60px;
+    }
+
+    .slide-title {
+        font-size: 20px;
+    }
+
+    .slide-subtitle {
+        font-size: 12px;
+    }
+
+    .slide-btn {
+        padding: 8px 22px;
+        font-size: 12px;
+    }
+
+    .indicators {
+        bottom: 16px;
+    }
+}
+
+/* ==================== 横屏手机 ==================== */
+@media (max-height: 500px) and (orientation: landscape) {
+    .banner-track {
+        height: 100vh;
+        min-height: auto;
+    }
+
+    .slide-content {
+        left: 80px;
+        right: auto;
+        bottom: 60px;
+        max-width: 50%;
     }
 
     .slide-title {
@@ -493,17 +703,12 @@ onUnmounted(() => {
 
     .slide-subtitle {
         font-size: 14px;
-        margin-bottom: 20px;
+        margin-bottom: 16px;
     }
 
     .slide-btn {
-        padding: 10px 24px;
+        padding: 8px 24px;
         font-size: 13px;
-    }
-
-    .indicators {
-        right: 24px;
-        bottom: 50px;
     }
 
     .arrow {
@@ -520,8 +725,9 @@ onUnmounted(() => {
         right: 16px;
     }
 
-    .scroll-hint {
-        display: none;
+    .indicators {
+        bottom: 16px;
+        right: 40px;
     }
 }
 </style>

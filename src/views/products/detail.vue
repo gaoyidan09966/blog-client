@@ -202,8 +202,8 @@
                     <div v-show="activeTab === 'notice'" class="tab-panel">
                         <div class="notice-list">
                             <div class="notice-item" v-for="(n, i) in notices" :key="i">
-                                <el-icon :size="28" :color="n.color">
-                                    <component :is="n.icon" />
+                                <el-icon :size="28" :color="n.color" v-if="resolveIcon(n.icon)">
+                                    <component :is="resolveIcon(n.icon)" />
                                 </el-icon>
                                 <div class="notice-body">
                                     <h4>{{ n.title }}</h4>
@@ -287,8 +287,42 @@ import {
     Document, Bell, Select, Lock, Timer
 } from '@element-plus/icons-vue';
 
+// ─── 图标映射：将 API 返回的字符串转为真实组件 ─────────
+const iconMap = {
+    Select,
+    Lock,
+    Timer,
+    Bell,
+    Document,
+    CircleCheckFilled,
+    CircleCloseFilled,
+    ShoppingCart,
+    Lightning,
+    ShoppingBag,
+    Picture,
+    Minus,
+    Plus,
+    TrendCharts,
+    Box
+};
+
+/**
+ * 安全解析图标名称
+ * @param {string|object} name - 图标字符串名称或已导入的组件对象
+ * @returns {object|null} 组件对象，未找到时返回 null
+ */
+const resolveIcon = (name) => {
+    if (!name) return null;
+    // 如果已经是组件对象（硬编码场景），直接返回
+    if (typeof name !== 'string') return name;
+    return iconMap[name] || null;
+};
+
+// ─── 路由 ──────────────────────────────────────────────
 const route = useRoute();
 const router = useRouter();
+
+// ─── 状态 ──────────────────────────────────────────────
 const loading = ref(true);
 const product = ref(null);
 const currentImageIndex = ref(0);
@@ -297,6 +331,7 @@ const activeTab = ref('detail');
 const isFav = ref(false);
 const relatedProducts = ref([]);
 
+// ─── 计算属性 ──────────────────────────────────────────
 const currentImage = computed(() => allImages.value[currentImageIndex.value] || '');
 
 const discountPercent = computed(() => {
@@ -311,7 +346,7 @@ const allImages = computed(() => {
         try {
             const parsed = JSON.parse(product.value.images);
             if (Array.isArray(parsed)) imgs.push(...parsed);
-        } catch (e) { }
+        } catch (e) { /* ignore */ }
     }
     return imgs;
 });
@@ -321,24 +356,10 @@ const detailImages = computed(() => {
         try {
             const parsed = JSON.parse(product.value.images);
             if (Array.isArray(parsed)) return parsed;
-        } catch (e) { }
+        } catch (e) { /* ignore */ }
     }
     return [];
 });
-
-const switchImage = (index) => { currentImageIndex.value = index; };
-const prevImage = () => { if (currentImageIndex.value > 0) currentImageIndex.value--; };
-const nextImage = () => { if (currentImageIndex.value < allImages.value.length - 1) currentImageIndex.value++; };
-
-const handleKeydown = (e) => {
-    if (e.key === 'ArrowLeft') prevImage();
-    if (e.key === 'ArrowRight') nextImage();
-};
-
-const tabs = [
-    { key: 'detail', label: '商品详情', icon: Document },
-    { key: 'notice', label: '购买须知', icon: Bell }
-];
 
 const specList = computed(() => [
     { label: '商品名称', value: product.value?.name || '-' },
@@ -349,6 +370,31 @@ const specList = computed(() => [
     { label: '上架状态', value: product.value?.status === 1 ? '在售' : '下架' },
 ]);
 
+// ─── 图片轮播 ──────────────────────────────────────────
+const switchImage = (index) => { currentImageIndex.value = index; };
+const prevImage = () => { if (currentImageIndex.value > 0) currentImageIndex.value--; };
+const nextImage = () => { if (currentImageIndex.value < allImages.value.length - 1) currentImageIndex.value++; };
+
+const handleKeydown = (e) => {
+    if (e.key === 'ArrowLeft') prevImage();
+    if (e.key === 'ArrowRight') nextImage();
+};
+
+// ─── 标签页 ────────────────────────────────────────────
+const tabs = [
+    { key: 'detail', label: '商品详情', icon: Document },
+    { key: 'notice', label: '购买须知', icon: Bell }
+];
+
+// ─── 保障项（硬编码，icon 为组件对象，安全） ──────────
+const guarantees = [
+    { icon: Select, text: '正品保证', color: '#38a169' },
+    { icon: Lock, text: '安全支付', color: '#667eea' },
+    { icon: Timer, text: '极速发货', color: '#F59E0B' },
+    { icon: Bell, text: '售后无忧', color: '#F472B6' }
+];
+
+// ─── 购买须知（来自 API，icon 为字符串，需 resolveIcon 转换）──
 const notices = ref([]);
 
 const fetchNotices = async () => {
@@ -360,18 +406,13 @@ const fetchNotices = async () => {
     }
 };
 
-const guarantees = [
-    { icon: Select, text: '正品保证', color: '#38a169' },
-    { icon: Lock, text: '安全支付', color: '#667eea' },
-    { icon: Timer, text: '极速发货', color: '#F59E0B' },
-    { icon: Bell, text: '售后无忧', color: '#F472B6' }
-];
-
+// ─── 数量控制 ──────────────────────────────────────────
 const clampQuantity = () => {
     if (!quantity.value || quantity.value < 1) quantity.value = 1;
     else if (quantity.value > product.value.stock) quantity.value = product.value.stock;
 };
 
+// ─── 数据获取 ──────────────────────────────────────────
 const fetchDetail = async (id) => {
     loading.value = true;
     try {
@@ -406,13 +447,16 @@ const fetchRelated = async () => {
     }
 };
 
+// ─── 收藏 ─────────────────────────────────────────────
 const checkFavStatus = () => {
     const favs = JSON.parse(localStorage.getItem('product_favs') || '[]');
     isFav.value = favs.includes(product.value?.id);
 };
 
+// ─── 跳转 ─────────────────────────────────────────────
 const goDetail = (id) => { router.push(`/products/${id}`); };
 
+// ─── 操作 ─────────────────────────────────────────────
 const handleAddCart = () => {
     if (product.value.stock <= 0) { ElMessage.warning('该商品已售罄'); return; }
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -445,8 +489,10 @@ const handleFav = () => {
     ElMessage.success(isFav.value ? '已收藏' : '已取消收藏');
 };
 
+// ─── 监听路由变化 ─────────────────────────────────────
 watch(() => route.params.id, (newId) => { if (newId) fetchDetail(newId); });
 
+// ─── 生命周期 ─────────────────────────────────────────
 onMounted(() => {
     if (route.params.id) fetchDetail(route.params.id);
     document.addEventListener('keydown', handleKeydown);
