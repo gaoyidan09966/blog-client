@@ -1,0 +1,45 @@
+/* =========================
+   全局样式
+========================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f6f7fb;
+    color: #333;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+/* =========================
+   响应式断点（后续统一使用）
+========================= */
+
+/* 平板 */
+@media (max-width: 1024px) {}
+
+/* 手机 */
+@media (max-width: 768px) {}
+
+/* 小屏手机 */
+@media (max-width: 480px) {}

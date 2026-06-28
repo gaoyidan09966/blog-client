@@ -145,50 +145,84 @@ onMounted(() => {
     fetchHotArticles();
 });
 </script>
-
 <style scoped>
 .home-page {
-    background: #f5f6f8;
+    min-height: 100vh;
+    background-color: #f5f7fa;
 }
 
-.section-main {
-    padding: 20px 0 60px;
+.section {
+    padding: 24px 0;
 }
 
 .section-inner {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 0 16px;
 }
 
+/* 主布局 - 桌面端 */
 .main-layout {
-    display: grid;
-    grid-template-columns: 1fr 340px;
+    display: flex;
     gap: 24px;
-    align-items: start;
+    align-items: flex-start;
 }
 
+/* 左侧文章列表区域 */
+.main-layout> :first-child {
+    flex: 1;
+    min-width: 0;
+    /* 防止flex子项溢出 */
+}
+
+/* 右侧边栏 */
 .main-right {
-    position: sticky;
-    top: 130px;
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-@media (max-width: 1024px) {
+/* 移动端适配 */
+@media screen and (max-width: 992px) {
     .main-layout {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
 
     .main-right {
-        position: static;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
+        width: 100%;
+        margin-top: 24px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .section {
+        padding: 16px 0;
+    }
+
+    .section-inner {
+        padding: 0 12px;
+    }
+
+    .main-layout {
         gap: 16px;
     }
+
+    .main-right {
+        gap: 16px;
+        margin-top: 16px;
+    }
 }
 
-@media (max-width: 768px) {
+/* 小屏幕手机优化 */
+@media screen and (max-width: 480px) {
+    .section-inner {
+        padding: 0 8px;
+    }
+
     .main-right {
-        grid-template-columns: 1fr;
+        gap: 12px;
     }
 }
 </style>

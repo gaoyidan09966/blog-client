@@ -3,6 +3,8 @@ import { createPinia } from "pinia";
 import App from "./App.vue";
 import router from "./router";
 
+import "./style.css";
+
 // 引入 Element Plus 核心库与样式
 import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
